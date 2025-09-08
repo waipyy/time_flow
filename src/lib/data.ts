@@ -1,35 +1,6 @@
 
 import type { TimeEvent, Goal, Tag } from './types';
 import { getDb } from './firebase-admin';
-import type { Firestore } from 'firebase-admin/firestore';
-
-export const debugDbConnection = async (db: Firestore) => {
-    try {
-      console.log('--- Testing Collection Access ---');
-      const collections = await db.listCollections();
-      console.log('Available collections:', collections.map(c => c.id));
-      
-      const tagsRef = db.collection('tags');
-      console.log('Tags collection reference created');
-      
-      const snapshot = await tagsRef.get();
-      console.log('Collection read successful, document count:', snapshot.docs.length);
-
-      if (snapshot.empty) {
-        console.log('Tags collection is empty. Adding a default tag.');
-        const defaultTag = { name: 'General', color: '#84cc16' };
-        await db.collection('tags').add(defaultTag);
-        console.log('Default tag created.');
-      }
-      
-    } catch (error: any) {
-      console.error('debugDbConnection detailed error:', {
-        code: error.code,
-        message: error.message,
-        stack: error.stack
-      });
-    }
-  };
 
 export const getEvents = async (): Promise<TimeEvent[]> => {
   try {
