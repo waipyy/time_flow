@@ -58,3 +58,4 @@ function DashboardSkeleton() {
     </main>
   );
 }
+/* Test sync from GitHub to Studio */
