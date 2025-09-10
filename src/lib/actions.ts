@@ -9,11 +9,19 @@ import { getDb } from './firebase-admin';
 
 
 export async function addEvent(eventData: Omit<TimeEvent, 'id' | 'duration'>) {
+  console.log('[DEBUG-2 Server] addEvent received raw data:', eventData);
   try {
     const db = getDb();
     const startTime = typeof eventData.startTime === 'string' ? new Date(eventData.startTime) : eventData.startTime;
     const endTime = typeof eventData.endTime === 'string' ? new Date(eventData.endTime) : eventData.endTime;
     const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+
+    console.log('[DEBUG-3 Server] Parsed Date objects:', {
+      startTime,
+      endTime,
+      startTimeISO: startTime.toISOString(),
+      endTimeISO: endTime.toISOString(),
+    });
     
     const newEventData = {
       ...eventData,
@@ -22,6 +30,7 @@ export async function addEvent(eventData: Omit<TimeEvent, 'id' | 'duration'>) {
       endTime,
     };
 
+    console.log('[DEBUG-4 Server] Data being sent to Firestore:', newEventData);
     const ref = await db.collection('events').add(newEventData);
     
     revalidateTag('events');
@@ -250,3 +259,5 @@ revalidatePath('/');
     return { success: false, error: "Failed to delete tag." };
   }
 }
+
+    

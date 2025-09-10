@@ -111,6 +111,14 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, avail
   };
 
   const onSubmit = async (data: EventFormValues) => {
+    console.log('[DEBUG-1 Client] EventForm onSubmit data:', {
+      ...data,
+      startTimeISO: data.startTime.toISOString(),
+      endTimeISO: data.endTime.toISOString(),
+      startTimeLocal: data.startTime.toString(),
+      endTimeLocal: data.endTime.toString()
+    });
+
     setIsLoading(true);
     try {
       const action = eventToEdit?.id ? updateEvent(eventToEdit.id, data) : addEvent(data);
@@ -399,3 +407,5 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, avail
     </>
   );
 }
+
+    
