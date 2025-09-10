@@ -407,5 +407,3 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, avail
     </>
   );
 }
-
-    

@@ -6,8 +6,8 @@ import {
   eachDayOfInterval,
   endOfDay,
   endOfWeek,
-  format,
-  isSameDay,
+  // format,
+  // isSameDay,
   isWithinInterval,
   max,
   min,
@@ -15,6 +15,7 @@ import {
   startOfDay,
   startOfWeek,
 } from 'date-fns';
+import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
@@ -28,6 +29,8 @@ interface CalendarViewProps {
   tags: Tag[];
 }
 
+const TIMEZONE = 'America/Los_Angeles';
+
 // Helper function to ensure date strings are parsed into Date objects.
 // The ISO strings from Firestore are already in UTC.
 const parseDate = (dateString: string | Date): Date => {
@@ -35,38 +38,34 @@ const parseDate = (dateString: string | Date): Date => {
 };
 
 export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
-  if (rawEvents && rawEvents.length > 0) {
-    console.log('[DEBUG-5 Client] Raw event data received by CalendarView:', JSON.parse(JSON.stringify(rawEvents[0])));
-  }
   const events = useMemo(() => {
     if (!rawEvents) return [];
-    const parsed = rawEvents.map(e => ({
-      ...e,
-      startTime: parseDate(e.startTime),
-      endTime: parseDate(e.endTime),
-    }));
-    if (parsed.length > 0) {
-      const firstEvent = parsed[0];
-      console.log('[DEBUG-6 Client] First event after parsing in CalendarView:', {
-        ...firstEvent,
-        startTimeISO: firstEvent.startTime.toISOString(),
-        endTimeISO: firstEvent.endTime.toISOString(),
-        startTimeLocal: firstEvent.startTime.toString(),
-        endTimeLocal: firstEvent.endTime.toString()
-      });
-    }
-    return parsed;
-  }, [rawEvents]);
+    const parsedEvents = rawEvents.map(e => ({
+    ...e,
+    startTime: parseDate(e.startTime),
+    endTime: parseDate(e.endTime),
+  }));
+  return parsedEvents;
+}, [rawEvents]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [editingEvent, setEditingEvent] = useState<TimeEvent | undefined>(
     undefined
   );
 
-  const week = eachDayOfInterval({
-    start: startOfWeek(currentDate, { weekStartsOn: 1 }),
-    end: endOfWeek(currentDate, { weekStartsOn: 1 }),
-  });
+  const week = useMemo(() => {
+    // Convert currentDate (local Date) to a Date object that, when interpreted locally, represents the same instant in TIMEZONE.
+    const zonedCurrentDate = toZonedTime(currentDate, TIMEZONE);
+    
+    // Calculate start/end of week based on this zoned date, which will give us Dates corresponding to the week in TIMEZONE.
+    const startOfTargetWeek = startOfWeek(zonedCurrentDate, { weekStartsOn: 1 });
+    const endOfTargetWeek = endOfWeek(zonedCurrentDate, { weekStartsOn: 1 });
+
+    return eachDayOfInterval({
+      start: startOfTargetWeek,
+      end: endOfTargetWeek,
+    });
+  }, [currentDate]);
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -78,15 +77,21 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
   };
 
   const getEventStyle = (event: TimeEvent & {startTime: Date, endTime: Date}, currentDay: Date) => {
-    const startOfCurrentDay = startOfDay(currentDay);
-    const endOfCurrentDay = endOfDay(currentDay);
+    const startOfCurrentDay = startOfDay(toZonedTime(currentDay, TIMEZONE));
+    const endOfCurrentDay = endOfDay(toZonedTime(currentDay, TIMEZONE));
 
-    const startOfEventOnDay = max([event.startTime, startOfCurrentDay]);
-    const endOfEventOnDay = min([event.endTime, endOfCurrentDay]);
+    const startOfEventOnDay = max([
+      toZonedTime(event.startTime, TIMEZONE),
+      startOfCurrentDay,
+    ]);
+    const endOfEventOnDay = min([
+      toZonedTime(event.endTime, TIMEZONE),
+      endOfCurrentDay,
+    ]);
 
     // Calculate start position relative to the beginning of the current day
     const startHour = (startOfEventOnDay.getTime() - startOfCurrentDay.getTime()) / (1000 * 60 * 60);
-    const durationHours = (endOfEventOnDay.getTime() - startOfCurrentDay.getTime()) / (1000 * 60 * 60);
+    const durationHours = (endOfEventOnDay.getTime() - startOfEventOnDay.getTime()) / (1000 * 60 * 60);
 
     return {
       top: `${startHour * 4}rem`, // 4rem per hour
@@ -110,7 +115,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
         <div className="p-4 border-b">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">
-              {format(startOfWeek(currentDate, { weekStartsOn: 1 }), 'MMMM yyyy')}
+              {formatInTimeZone(startOfWeek(toZonedTime(currentDate, TIMEZONE), { weekStartsOn: 1 }), TIMEZONE, 'MMMM yyyy')}
             </h2>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="icon" onClick={handlePrevWeek}>
@@ -125,15 +130,25 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
         <div className="flex flex-1 overflow-auto">
           {/* Time column */}
           <div className="w-20 border-r text-sm shrink-0">
-            {hours.map((hour) => (
-              <div
-                key={hour}
-                className="h-16 text-right pr-2 text-xs text-muted-foreground border-t pt-1"
-              >
-                {hour > 0 &&
-                  format(set(new Date(), { hours: hour, minutes: 0 }), 'p')}
-              </div>
-            ))}
+            {/* Spacer to align with the sticky day headers */}
+            <div className="sticky top-0 bg-background z-10 text-center p-2 border-b">
+                <p className="text-sm font-medium invisible">Mon</p>
+                <p className="text-2xl font-semibold invisible">8</p>
+            </div>
+            <div className="relative">
+                {hours.map((hour) => {
+                  const dateForLabel = set(toZonedTime(new Date(), TIMEZONE), { hours: hour, minutes: 0 });
+                  const formattedLabel = formatInTimeZone(dateForLabel, TIMEZONE, 'p');
+                  return (
+                    <div
+                      key={hour}
+                      className="h-16 text-right pr-2 text-xs text-muted-foreground border-t flex items-center"
+                    >
+                      {formattedLabel}
+                    </div>
+                  );
+                })}
+            </div>
           </div>
 
           {/* Day columns */}
@@ -141,8 +156,8 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
             {week.map((day) => (
               <div key={day.toString()} className="relative border-l">
                 <div className="sticky top-0 bg-background z-10 text-center p-2 border-b">
-                  <p className="text-sm font-medium">{format(day, 'EEE')}</p>
-                  <p className="text-2xl font-semibold">{format(day, 'd')}</p>
+                  <p className="text-sm font-medium">{formatInTimeZone(day, TIMEZONE, 'EEE')}</p>
+                  <p className="text-2xl font-semibold">{formatInTimeZone(day, TIMEZONE, 'd')}</p>
                 </div>
                 <div className="relative">
                   {/* Hour lines */}
@@ -151,15 +166,20 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
                   ))}
                   {/* Events */}
                   {events
-                    .filter((event) =>
-                      isWithinInterval(day, {
-                        start: startOfDay(event.startTime),
-                        end: endOfDay(event.endTime),
-                      })
-                    )
+                    .filter((event) => {
+                      const filterDayStart = startOfDay(toZonedTime(day, TIMEZONE));
+                      const filterDayEnd = endOfDay(toZonedTime(day, TIMEZONE));
+                      const eventStartZoned = toZonedTime(event.startTime, TIMEZONE);
+                      const eventEndZoned = toZonedTime(event.endTime, TIMEZONE);
+                      
+                      const isEventWithinDay = isWithinInterval(eventStartZoned, { start: filterDayStart, end: filterDayEnd }) ||
+                                               isWithinInterval(eventEndZoned, { start: filterDayStart, end: filterDayEnd }) ||
+                                               (eventStartZoned < filterDayStart && eventEndZoned > filterDayEnd);
+                      return isEventWithinDay;
+                    })
                     .map((event) => (
                       <div
-                        key={event.id + format(day, 'yyyy-MM-dd')}
+                        key={event.id + formatInTimeZone(day, TIMEZONE, 'yyyy-MM-dd')}
                         className="absolute w-[95%] left-1 p-1 rounded text-white text-xs cursor-pointer z-20 flex items-center justify-center"
                         style={{
                           ...getEventStyle(event as TimeEvent & {startTime: Date, endTime: Date}, day),
@@ -188,5 +208,3 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
     </>
   );
 }
-
-    
