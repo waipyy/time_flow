@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { TimeEvent, Tag } from '@/lib/types';
@@ -19,12 +20,8 @@ interface TimeBreakdownChartProps {
   allTags: Tag[];
 }
 
-const parseUTC = (dateString: string | Date) => {
-  if (dateString instanceof Date) {
-    return dateString;
-  }
-  const date = new Date(dateString);
-  return date;
+const parseDate = (dateString: string | Date) => {
+  return typeof dateString === 'string' ? new Date(dateString) : dateString;
 };
 
 export function TimeBreakdownChart({ events: rawEvents, allTags }: TimeBreakdownChartProps) {
@@ -34,8 +31,8 @@ export function TimeBreakdownChart({ events: rawEvents, allTags }: TimeBreakdown
     if (!rawEvents) return [];
     return rawEvents.map(e => ({
     ...e,
-    startTime: parseUTC(e.startTime),
-    endTime: parseUTC(e.endTime),
+    startTime: parseDate(e.startTime),
+    endTime: parseDate(e.endTime),
   }))}, [rawEvents]);
   
   const chartData = useMemo(() => {

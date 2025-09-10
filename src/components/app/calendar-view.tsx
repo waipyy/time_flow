@@ -58,9 +58,9 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
   };
 
   const getEventStyle = (event: TimeEvent & {startTime: Date}) => {
-    // Use UTC methods to get the correct hour and minute from the UTC date.
+    // Use standard local time methods. The browser will handle the UTC to local conversion.
     const startHour =
-      event.startTime.getUTCHours() + event.startTime.getUTCMinutes() / 60;
+      event.startTime.getHours() + event.startTime.getMinutes() / 60;
     const durationHours = event.duration / 60;
 
     return {
