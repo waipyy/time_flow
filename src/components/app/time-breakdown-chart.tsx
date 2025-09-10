@@ -19,6 +19,14 @@ interface TimeBreakdownChartProps {
   allTags: Tag[];
 }
 
+const parseUTC = (dateString: string | Date) => {
+  if (dateString instanceof Date) {
+    return dateString;
+  }
+  const date = new Date(dateString);
+  return date;
+};
+
 export function TimeBreakdownChart({ events: rawEvents, allTags }: TimeBreakdownChartProps) {
   const { resolvedTheme } = useTheme();
 
@@ -26,8 +34,8 @@ export function TimeBreakdownChart({ events: rawEvents, allTags }: TimeBreakdown
     if (!rawEvents) return [];
     return rawEvents.map(e => ({
     ...e,
-    startTime: new Date(e.startTime as string),
-    endTime: new Date(e.endTime as string),
+    startTime: parseUTC(e.startTime),
+    endTime: parseUTC(e.endTime),
   }))}, [rawEvents]);
   
   const chartData = useMemo(() => {

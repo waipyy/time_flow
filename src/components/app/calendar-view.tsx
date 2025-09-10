@@ -23,13 +23,25 @@ interface CalendarViewProps {
   tags: Tag[];
 }
 
+// Helper function to parse date strings as UTC
+const parseUTC = (dateString: string | Date) => {
+  if (dateString instanceof Date) {
+    return dateString;
+  }
+  const date = new Date(dateString);
+  // The string is in ISO format (e.g., "2024-01-01T10:00:00.000Z"), which is already UTC.
+  // new Date() correctly parses this. The issue arises when local-timezone-based
+  // methods like getHours() are used. We need to use UTC methods like getUTCHours().
+  return date;
+};
+
 export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
   const events = useMemo(() => {
     if (!rawEvents) return [];
     return rawEvents.map(e => ({
     ...e,
-    startTime: new Date(e.startTime),
-    endTime: new Date(e.endTime),
+    startTime: parseUTC(e.startTime),
+    endTime: parseUTC(e.endTime),
   }))}, [rawEvents]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -53,7 +65,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
 
   const getEventStyle = (event: TimeEvent & {startTime: Date}) => {
     const startHour =
-      event.startTime.getHours() + event.startTime.getMinutes() / 60;
+      event.startTime.getUTCHours() + event.startTime.getUTCMinutes() / 60;
     const durationHours = event.duration / 60;
 
     return {
@@ -125,7 +137,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
                         key={event.id}
                         className="absolute w-[95%] left-1 p-1 rounded text-white text-xs cursor-pointer z-20 flex items-center justify-center"
                         style={{
-                          ...getEventStyle(event),
+                          ...getEventStyle(event as TimeEvent & {startTime: Date}),
                           backgroundColor: getTagColor(event.tags[0]),
                         }}
                         onClick={() => setEditingEvent(event)}

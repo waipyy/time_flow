@@ -7,13 +7,20 @@ let db: Firestore | undefined;
 
 const initializeDb = () => {
   if (admin.apps.length > 0) {
+    console.log('--- Firebase Admin SDK already initialized ---');
     app = admin.apps[0]!;
     return;
   }
 
   try {
     console.log('--- Initializing Firebase Admin with require(serviceAccountKey.json) ---');
-    const serviceAccount = require('./serviceAccountKey.json');
+    const serviceAccountJson = process.env.SERVICE_ACCOUNT_JSON;
+    
+    if (!serviceAccountJson) {
+      throw new Error('SERVICE_ACCOUNT_JSON environment variable not found');
+    }
+    
+    const serviceAccount = JSON.parse(serviceAccountJson);
 
     console.log('--- Raw Service Account Debug ---');
     console.log('Type of serviceAccount:', typeof serviceAccount);
