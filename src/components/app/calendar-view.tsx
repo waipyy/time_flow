@@ -11,7 +11,7 @@ import {
   startOfWeek,
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import type { Tag, TimeEvent } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -23,16 +23,10 @@ interface CalendarViewProps {
   tags: Tag[];
 }
 
-// Helper function to parse date strings as UTC
-const parseUTC = (dateString: string | Date) => {
-  if (dateString instanceof Date) {
-    return dateString;
-  }
-  const date = new Date(dateString);
-  // The string is in ISO format (e.g., "2024-01-01T10:00:00.000Z"), which is already UTC.
-  // new Date() correctly parses this. The issue arises when local-timezone-based
-  // methods like getHours() are used. We need to use UTC methods like getUTCHours().
-  return date;
+// Helper function to ensure date strings are parsed into Date objects.
+// The ISO strings from Firestore are already in UTC.
+const parseDate = (dateString: string | Date): Date => {
+  return typeof dateString === 'string' ? new Date(dateString) : dateString;
 };
 
 export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
@@ -40,8 +34,8 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
     if (!rawEvents) return [];
     return rawEvents.map(e => ({
     ...e,
-    startTime: parseUTC(e.startTime),
-    endTime: parseUTC(e.endTime),
+    startTime: parseDate(e.startTime),
+    endTime: parseDate(e.endTime),
   }))}, [rawEvents]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -64,6 +58,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
   };
 
   const getEventStyle = (event: TimeEvent & {startTime: Date}) => {
+    // Use UTC methods to get the correct hour and minute from the UTC date.
     const startHour =
       event.startTime.getUTCHours() + event.startTime.getUTCMinutes() / 60;
     const durationHours = event.duration / 60;
