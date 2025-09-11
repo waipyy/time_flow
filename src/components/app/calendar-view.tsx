@@ -272,7 +272,8 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
                           ...getEventStyle(event as TimeEvent & {startTime: Date, endTime: Date}, day),
                           backgroundColor: getTagColor(event.tags?.[0]),
                         }}
-                        onClick={() => !dragStartDate && setEditingEvent(event)}
+                        onClick={() => setEditingEvent(event)}
+                        onMouseDown={(e) => e.stopPropagation()}
                       >
                         <p className="font-bold whitespace-normal text-center">
                           {event.title}
@@ -296,3 +297,4 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
     </>
   );
 }
+
