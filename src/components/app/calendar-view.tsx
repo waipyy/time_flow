@@ -76,6 +76,21 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
     setCurrentDate((prev) => add(prev, { weeks: 1 }));
   };
 
+  const handleCreateEvent = (day: Date, hour: number) => {
+    const zonedDay = toZonedTime(day, TIMEZONE);
+    const startTime = set(zonedDay, { hours: hour, minutes: 0, seconds: 0, milliseconds: 0 });
+    const endTime = add(startTime, { hours: 1 });
+
+    const newEvent: Partial<TimeEvent> = {
+      title: '',
+      description: '',
+      tags: [],
+      startTime,
+      endTime,
+    };
+    setEditingEvent(newEvent as TimeEvent);
+  };
+
   const getEventStyle = (event: TimeEvent & {startTime: Date, endTime: Date}, currentDay: Date) => {
     const startOfCurrentDay = startOfDay(toZonedTime(currentDay, TIMEZONE));
     const endOfCurrentDay = endOfDay(toZonedTime(currentDay, TIMEZONE));
@@ -162,7 +177,11 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
                 <div className="relative">
                   {/* Hour lines */}
                   {hours.map((hour) => (
-                    <div key={hour} className="h-16 border-t"></div>
+                    <div 
+                      key={hour} 
+                      className="h-16 border-t cursor-pointer"
+                      onClick={() => handleCreateEvent(day, hour)}
+                    ></div>
                   ))}
                   {/* Events */}
                   {events
@@ -203,6 +222,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
           isOpen={!!editingEvent}
           onOpenChange={(isOpen) => !isOpen && setEditingEvent(undefined)}
           eventToEdit={editingEvent}
+          availableTags={tags}
         />
       )}
     </>
