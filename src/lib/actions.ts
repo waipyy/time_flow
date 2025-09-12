@@ -42,6 +42,40 @@ export async function addEvent(eventData: Omit<TimeEvent, 'id' | 'duration'>) {
   }
 }
 
+export async function addEvents(eventsData: Omit<TimeEvent, 'id' | 'duration'>[]) {
+  try {
+    const db = getDb();
+    const batch = db.batch();
+    const events = [];
+
+    for (const eventData of eventsData) {
+      const startTime = typeof eventData.startTime === 'string' ? new Date(eventData.startTime) : eventData.startTime;
+      const endTime = typeof eventData.endTime === 'string' ? new Date(eventData.endTime) : eventData.endTime;
+      const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+
+      const newEventData = {
+        ...eventData,
+        duration,
+        startTime,
+        endTime,
+      };
+      
+      const ref = db.collection('events').doc();
+      batch.set(ref, newEventData);
+      events.push({ ...newEventData, id: ref.id });
+    }
+
+    await batch.commit();
+    
+    revalidateTag('events');
+    revalidatePath('/');
+    return { success: true, events };
+  } catch (error) {
+    console.error("Error adding events:", error);
+    return { success: false, error: "Failed to create events." };
+  }
+}
+
 export async function updateEvent(eventId: string, eventData: Omit<TimeEvent, 'id' | 'duration'>) {
   try {
     const db = getDb();
@@ -259,5 +293,3 @@ revalidatePath('/');
     return { success: false, error: "Failed to delete tag." };
   }
 }
-
-    

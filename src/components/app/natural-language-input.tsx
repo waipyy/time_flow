@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,10 +15,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { parseEventWithAI } from '@/lib/actions';
 import type { ParseNaturalLanguageInputOutput } from '@/ai/flows/parse-natural-language-input';
-import { EventForm } from './event-form';
-import { Loader2 } from 'lucide-react';
-import type { Tag, TimeEvent } from '@/lib/types';
+import { Eye, Loader2 } from 'lucide-react';
+import type { Tag } from '@/lib/types';
 import { useTags } from '@/hooks/use-tags';
+import { Accordion } from '@/components/ui/accordion';
+import { EventAccordionItem } from './event-accordion-item';
+import { AiDebugView } from './ai-debug-view';
 
 interface NaturalLanguageInputProps {
   isOpen: boolean;
@@ -35,8 +37,19 @@ export function NaturalLanguageInput({ isOpen, onOpenChange }: NaturalLanguageIn
     prompt: string,
     response: string
   } | null>(null);
+  const [processedEventCount, setProcessedEventCount] = useState(0);
+  const [isDebugViewOpen, setIsDebugViewOpen] = useState(false);
   const { toast } = useToast();
   const { tags: availableTagsFromHook } = useTags();
+
+  useEffect(() => {
+    if (parsedData && processedEventCount === parsedData.events.length) {
+      toast({
+        title: 'All events processed',
+        description: 'You can now close this dialog.',
+      });
+    }
+  }, [processedEventCount, parsedData, toast]);
 
   const handleClose = () => {
     onOpenChange(false);
@@ -46,6 +59,7 @@ export function NaturalLanguageInput({ isOpen, onOpenChange }: NaturalLanguageIn
       setIsLoading(false);
       setIsConfirming(false);
       setAiInteraction(null);
+      setProcessedEventCount(0);
     }, 300);
   };
 
@@ -58,9 +72,9 @@ export function NaturalLanguageInput({ isOpen, onOpenChange }: NaturalLanguageIn
     setIsLoading(false);
     if (result.success && result.data && result.debug) {
       setParsedData(result.data);
-      setAiInteraction({ 
-        prompt: result.debug.prompt, 
-        response: JSON.stringify(result.debug.response, null, 2) 
+      setAiInteraction({
+        prompt: result.debug.prompt,
+        response: JSON.stringify(result.debug.response, null, 2)
       });
       setIsConfirming(true);
     } else {
@@ -71,33 +85,54 @@ export function NaturalLanguageInput({ isOpen, onOpenChange }: NaturalLanguageIn
       });
     }
   };
-  
-  if (isConfirming && parsedData) {
-    const eventToEdit: Partial<TimeEvent> & {
-      startTime: Date;
-      endTime: Date;
-    } = {
-      title: parsedData.title,
-      tags: parsedData.tags,
-      startTime: new Date(parsedData.startTime),
-      endTime: new Date(parsedData.endTime),
-    };
 
+  const handleEventProcessed = () => {
+    setProcessedEventCount(prev => prev + 1);
+  };
+
+  if (isConfirming && parsedData) {
     return (
-      <EventForm
-        isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            handleClose();
-          } else {
-            onOpenChange(open);
-          }
-        }}
-        eventToEdit={eventToEdit}
-        onFinished={handleClose}
-        availableTags={availableTagsFromHook}
-        aiDebugInfo={aiInteraction}
-      />
+      <>
+        <Dialog open={isOpen} onOpenChange={handleClose}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Review and Save Events</DialogTitle>
+              <DialogDescription>
+                AI has parsed the following events from your input. Review, edit, and save them individually.
+              </DialogDescription>
+            </DialogHeader>
+            <Accordion type="single" collapsible className="w-full">
+              {parsedData.events.map((event, index) => (
+                <EventAccordionItem
+                  key={index}
+                  event={event}
+                  availableTags={availableTagsFromHook}
+                  onEventProcessed={handleEventProcessed}
+                />
+              ))}
+            </Accordion>
+            <DialogFooter>
+              {aiInteraction && (
+                <Button type="button" variant="ghost" onClick={() => setIsDebugViewOpen(true)} className="mr-auto">
+                  <Eye className="mr-2 h-4 w-4"/>
+                  Inspect AI
+                </Button>
+              )}
+              <Button onClick={handleClose}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {aiInteraction && (
+          <AiDebugView 
+              isOpen={isDebugViewOpen} 
+              onOpenChange={setIsDebugViewOpen} 
+              prompt={aiInteraction.prompt} 
+              response={aiInteraction.response}
+          />
+        )}
+      </>
     );
   }
 

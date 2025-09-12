@@ -1,4 +1,4 @@
- 'use server';
+'use server';
 
 /**
  * @fileOverview Parses natural language input to extract event details, tags, and time information.
@@ -21,12 +21,16 @@ const ParseNaturalLanguageInputInputSchema = z.object({
 });
 export type ParseNaturalLanguageInputInput = z.infer<typeof ParseNaturalLanguageInputInputSchema>;
 
-const ParseNaturalLanguageInputOutputSchema = z.object({
+const EventSchema = z.object({
   title: z.string().describe('A short, present-tense title for the event (e.g., "Work on resume").'),
   startTime: z.string().describe('The start time of the event in ISO format.'),
   endTime: z.string().describe('The end time of the event in ISO format.'),
   tags: z.array(z.string()).describe('Suggested tags for the event, chosen ONLY from the provided available tags.'),
   duration: z.number().describe('The duration of the event in minutes.'),
+});
+
+const ParseNaturalLanguageInputOutputSchema = z.object({
+  events: z.array(EventSchema),
 });
 export type ParseNaturalLanguageInputOutput = z.infer<typeof ParseNaturalLanguageInputOutputSchema>;
 
@@ -38,40 +42,62 @@ export const parseNaturalLanguageInputPrompt = ai.definePrompt({
   name: 'parseNaturalLanguageInputPrompt',
   input: {schema: ParseNaturalLanguageInputInputSchema},
   output: {schema: ParseNaturalLanguageInputOutputSchema},
-  prompt: `You are a time tracking assistant. Your job is to parse user input to
-extract the event title, start/end times, suggested tags, and duration.
+  prompt: `You are a time tracking assistant. Your job is to parse user input to extract one or more events by strictly following the rules provided.
 
-The current time is {{{now}}}. Use this as the reference for any relative time expressions.
-The user is in the {{{timezone}}} timezone. All times you extract should be interpreted as being in this timezone.
+The current time is {{{now}}}.
+The user is in the {{{timezone}}} timezone.
 
-IMPORTANT TITLE RULES:
-1. The title should be a short, concise summary of the activity (e.g., "Work out", "Read book", "Project A meeting").
-2. The title MUST be in the present tense (e.g., use "Work out" not "Worked out").
-3. The title should NOT include personal pronouns ("I"), conversational filler ("today"), or other unnecessary words.
+**CRITICAL ALGORITHM: YOU MUST FOLLOW THESE STEPS EXACTLY.**
 
-IMPORTANT TIME RULES:
-1. If the user provides an explicit start and end time (e.g., "from 2pm to 4pm"), you MUST use those times.
-2. If the user provides only a duration (e.g., "for 2 hours"), you should assume the event just finished. The current time (passed in the \`{{{now}}}\` variable) is the END time of the event. Calculate the start time based on the duration.
-3. If the user provides a start time and a duration (e.g., "worked for 2 hours starting at 1pm"), calculate the end time from there.
+**Step 1: Identify the Events and their Chronological Order**
+- Find all distinct activities mentioned in the input (e.g., "Build AI project", "Eat").
+- Determine the sequence in which they occurred. Keywords like "before that" mean the event mentioned first happened *after* the event mentioned second.
 
-Here is a list of available tags you can use:
+**Step 2: Anchor the Timeline**
+- Find the **most recent event** in the sequence.
+- The \`endTime\` of this most recent event is **EXACTLY** the current time: \`{{{now}}}\`.
+- **CRITICAL**: When someone says "I just did X for Y minutes", they mean they **finished** doing X at the current time, not that they're **starting** X now.
+- **CRITICAL**: DO NOT use the current time as the \`startTime\` of any event. The current time is always an \`endTime\`.
+
+**Step 3: Chain Events Backward from the Anchor**
+- Calculate the \`startTime\` of the most recent event by subtracting its duration from its \`endTime\`.
+- For each preceding event in the sequence:
+  - Its \`endTime\` becomes the \`startTime\` of the event that follows it chronologically.
+  - Calculate its \`startTime\` by subtracting its duration from its \`endTime\`.
+
+**Example Walkthrough:**
+- **Input**: "I built an AI project for 1 hour, before that I ate for 20 mins"
+- **Current Time**: 20:09:49 (8:09:49 PM)
+- **Execution**:
+  1. **Events**: "Build AI project" (60 mins), "Eat" (20 mins).
+  2. **Order**: "Build AI project" is the most recent.
+  3. **Anchor**: The \`endTime\` for "Build AI project" is **20:09:49**.
+  4. **Chain**:
+      - The \`startTime\` for "Build AI project" is **19:09:49** (20:09:49 - 60 mins).
+      - The \`endTime\` for "Eat" is **19:09:49** (the startTime of "Build AI project").
+      - The \`startTime\` for "Eat" is **18:49:49** (19:09:49 - 20 mins).
+
+**Available Tags**: You MUST only use tags from this list.
 {{#each availableTags}}
 - {{{this}}}
 {{/each}}
 
-You MUST only use tags from the list above. Do not create new tags.
-
 Input: {{{text}}}
 
-Output:{
-  "title": "extracted event title",
-  "startTime": "extracted start time in ISO format",
-  "endTime": "extracted end time in ISO format",
-  "tags": ["tag1", "tag2"],
-  "duration": extracted duration in minutes
+**Output format**:
+{
+  "events": [
+    {
+      "title": "...",
+      "startTime": "...",
+      "endTime": "...",
+      "tags": ["..."],
+      "duration": ...
+    }
+  ]
 }
 
-Make sure the extracted times are in ISO format.
+Ensure the final events array is ordered chronologically by \`startTime\`.
 `,
 });
 
@@ -83,6 +109,10 @@ const parseNaturalLanguageInputFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await parseNaturalLanguageInputPrompt(input);
+    // Sort events by start time to ensure chronological order
+    if (output && output.events) {
+      output.events.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    }
     return output!;
   }
 );
