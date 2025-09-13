@@ -1,6 +1,3 @@
-
-'use client';
-
 import {
   add,
   eachDayOfInterval,
@@ -36,6 +33,14 @@ const TIMEZONE = 'America/Los_Angeles';
 const parseDate = (dateString: string | Date): Date => {
   return typeof dateString === 'string' ? new Date(dateString) : dateString;
 };
+
+// Type for an event with calculated position properties
+interface EventWithPosition extends TimeEvent {
+  startTime: Date;
+  endTime: Date;
+  column?: number;
+  totalColumns?: number;
+}
 
 export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
   const events = useMemo(() => {
@@ -152,8 +157,65 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
     setDraggingEvent(null);
   };
 
+  // Function to determine overlaps and assign column/totalColumns
+  const getEventsWithOverlapData = (day: Date, events: EventWithPosition[]): EventWithPosition[] => {
+    const dayStart = startOfDay(toZonedTime(day, TIMEZONE));
+    const dayEnd = endOfDay(toZonedTime(day, TIMEZONE));
 
-  const getEventStyle = (event: TimeEvent & {startTime: Date, endTime: Date}, currentDay: Date) => {
+    const eventsForDay = events
+      .filter(event => {
+        if (!event || !event.startTime || !event.endTime) return false;
+        const eventStartZoned = toZonedTime(event.startTime, TIMEZONE);
+        const eventEndZoned = toZonedTime(event.endTime, TIMEZONE);
+
+        return isWithinInterval(eventStartZoned, { start: dayStart, end: dayEnd }) ||
+               isWithinInterval(eventEndZoned, { start: dayStart, end: dayEnd }) ||
+               (eventStartZoned < dayStart && eventEndZoned > dayEnd);
+      })
+      .sort((a, b) => a.startTime.getTime() - b.startTime.getTime()); // Sort by start time
+
+    const positionedEvents: EventWithPosition[] = [];
+    const columns: EventWithPosition[][] = []; // Array of arrays, each inner array is a column
+
+    for (const event of eventsForDay) {
+      let placed = false;
+      for (let i = 0; i < columns.length; i++) {
+        const column = columns[i];
+        // Check if the current event overlaps with any event already in this column
+        const overlapsWithColumn = column.some(placedEvent => 
+          // An overlap occurs if their time intervals genuinely cross, but not if one ends exactly when the other begins.
+          event.startTime < placedEvent.endTime && event.endTime > placedEvent.startTime
+        );
+
+        if (!overlapsWithColumn) {
+          // Place event in this column
+          event.column = i;
+          column.push(event);
+          positionedEvents.push(event); 
+          placed = true;
+          break;
+        }
+      }
+
+      if (!placed) {
+        // Create a new column
+        event.column = columns.length;
+        columns.push([event]);
+        positionedEvents.push(event);
+      }
+    }
+
+    // After all events are placed, update totalColumns for each
+    const totalColumns = columns.length;
+    for (const event of positionedEvents) {
+      event.totalColumns = totalColumns;
+    }
+
+    return positionedEvents;
+  };
+
+
+  const getEventStyle = (event: EventWithPosition, currentDay: Date) => {
     const startOfCurrentDay = startOfDay(toZonedTime(currentDay, TIMEZONE));
     const endOfCurrentDay = endOfDay(toZonedTime(currentDay, TIMEZONE));
 
@@ -170,9 +232,25 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
     const startHour = (startOfEventOnDay.getTime() - startOfCurrentDay.getTime()) / (1000 * 60 * 60);
     const durationHours = (endOfEventOnDay.getTime() - startOfEventOnDay.getTime()) / (1000 * 60 * 60);
 
-    return {
+    const baseStyle = {
       top: `${startHour * 4}rem`, // 4rem per hour
       height: `${durationHours * 4}rem`,
+    };
+
+    if (event.column !== undefined && event.totalColumns !== undefined) {
+      const columnWidth = 100 / event.totalColumns;
+      const leftOffset = event.column * columnWidth;
+      return {
+        ...baseStyle,
+        left: `${leftOffset}%`,
+        width: `${columnWidth}%`,
+      };
+    }
+
+    return {
+      ...baseStyle,
+      left: '0%',
+      width: '100%',
     };
   };
 
@@ -230,14 +308,16 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
 
           {/* Day columns */}
           <div className="flex-1 grid" style={{ gridTemplateColumns: 'repeat(7, minmax(140px, 1fr))' }} onMouseLeave={() => setDragStartDate(null)}>
-            {week.map((day) => (
+            {week.map((day) => {
+              const eventsWithPosition = getEventsWithOverlapData(day, displayedEvents as EventWithPosition[]);
+              return (
               <div key={day.toString()} className="relative border-l">
                 <div className="sticky top-0 bg-background z-10 text-center p-2 border-b">
                   <p className="text-sm font-medium">{formatInTimeZone(day, TIMEZONE, 'EEE')}</p>
                   <p className="text-2xl font-semibold">{formatInTimeZone(day, TIMEZONE, 'd')}</p>
                 </div>
                 <div 
-                  className="relative"
+                  className="relative h-[96rem]" // Explicit height for event positioning
                   onMouseDown={(e) => handleMouseDown(day, e)}
                   onMouseMove={(e) => handleMouseMove(day, e)}
                   onMouseUp={handleMouseUp}
@@ -251,25 +331,12 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
                     ></div>
                   ))}
                   {/* Events */}
-                  {displayedEvents
-                    .filter((event) => {
-                      if (!event || !event.startTime || !event.endTime) return false;
-                      const filterDayStart = startOfDay(toZonedTime(day, TIMEZONE));
-                      const filterDayEnd = endOfDay(toZonedTime(day, TIMEZONE));
-                      const eventStartZoned = toZonedTime(event.startTime, TIMEZONE);
-                      const eventEndZoned = toZonedTime(event.endTime, TIMEZONE);
-                      
-                      const isEventWithinDay = isWithinInterval(eventStartZoned, { start: filterDayStart, end: filterDayEnd }) ||
-                                               isWithinInterval(eventEndZoned, { start: filterDayStart, end: filterDayEnd }) ||
-                                               (eventStartZoned < filterDayStart && eventEndZoned > filterDayEnd);
-                      return isEventWithinDay;
-                    })
-                    .map((event) => (
+                  {eventsWithPosition.map((event) => (
                       <div
                         key={event.id || 'placeholder-event'}
-                        className="absolute w-[95%] left-1 p-1 rounded text-white text-xs cursor-pointer z-20 flex items-center justify-center"
+                        className="absolute p-1 rounded text-white text-xs cursor-pointer z-20 flex items-center justify-center overflow-hidden" 
                         style={{
-                          ...getEventStyle(event as TimeEvent & {startTime: Date, endTime: Date}, day),
+                          ...getEventStyle(event, day),
                           backgroundColor: getTagColor(event.tags?.[0]),
                         }}
                         onClick={() => setEditingEvent(event)}
@@ -282,7 +349,8 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
                     ))}
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
         </div>
       </div>
@@ -297,4 +365,3 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
     </>
   );
 }
-
