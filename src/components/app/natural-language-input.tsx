@@ -21,6 +21,7 @@ import { useTags } from '@/hooks/use-tags';
 import { Accordion } from '@/components/ui/accordion';
 import { EventAccordionItem } from './event-accordion-item';
 import { AiDebugView } from './ai-debug-view';
+import { EventForm } from './event-form'; // Import EventForm
 
 interface NaturalLanguageInputProps {
   isOpen: boolean;
@@ -43,7 +44,7 @@ export function NaturalLanguageInput({ isOpen, onOpenChange }: NaturalLanguageIn
   const { tags: availableTagsFromHook } = useTags();
 
   useEffect(() => {
-    if (parsedData && processedEventCount === parsedData.events.length) {
+    if (parsedData && parsedData.events.length > 1 && processedEventCount === parsedData.events.length) {
       toast({
         title: 'All events processed',
         description: 'You can now close this dialog.',
@@ -91,6 +92,55 @@ export function NaturalLanguageInput({ isOpen, onOpenChange }: NaturalLanguageIn
   };
 
   if (isConfirming && parsedData) {
+    // If only one event, show the EventForm directly
+    if (parsedData.events.length === 1) {
+      const event = parsedData.events[0];
+      return (
+        <>
+          <Dialog open={isOpen} onOpenChange={handleClose}>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>Review and Save Event</DialogTitle>
+                <DialogDescription>
+                  AI has parsed the following event from your input. Review, edit, and save it.
+                </DialogDescription>
+              </DialogHeader>
+              <EventForm
+                className="p-4"
+                eventToEdit={{
+                  title: event.title,
+                  tags: event.tags,
+                  startTime: new Date(event.startTime),
+                  endTime: new Date(event.endTime),
+                }}
+                onFinished={handleClose} // Close dialog after single event is saved/cancelled
+                onCancelled={handleClose} // Close dialog after single event is saved/cancelled
+                availableTags={availableTagsFromHook}
+              />
+              <DialogFooter>
+                {aiInteraction && (
+                  <Button type="button" variant="ghost" onClick={() => setIsDebugViewOpen(true)} className="mr-auto">
+                    <Eye className="mr-2 h-4 w-4"/>
+                    Inspect AI
+                  </Button>
+                )}
+                {/* No 'Close' button needed here as form handles close on finish/cancel */}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          {aiInteraction && (
+            <AiDebugView 
+                isOpen={isDebugViewOpen} 
+                onOpenChange={setIsDebugViewOpen} 
+                prompt={aiInteraction.prompt} 
+                response={aiInteraction.response}
+            />
+          )}
+        </>
+      );
+    }
+
+    // If more than one event, show the accordion view
     return (
       <>
         <Dialog open={isOpen} onOpenChange={handleClose}>
