@@ -13,15 +13,15 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { parseEventWithAI } from '@/lib/actions';
+import { parseEventWithAI, addEvents } from '@/lib/actions'; // Import addEvents
 import type { ParseNaturalLanguageInputOutput } from '@/ai/flows/parse-natural-language-input';
-import { Eye, Loader2 } from 'lucide-react';
+import { Eye, Loader2, CheckCircle2 } from 'lucide-react';
 import type { Tag } from '@/lib/types';
 import { useTags } from '@/hooks/use-tags';
 import { Accordion } from '@/components/ui/accordion';
 import { EventAccordionItem } from './event-accordion-item';
 import { AiDebugView } from './ai-debug-view';
-import { EventForm } from './event-form'; // Import EventForm
+import { EventForm } from './event-form';
 
 interface NaturalLanguageInputProps {
   isOpen: boolean;
@@ -34,6 +34,7 @@ export function NaturalLanguageInput({ isOpen, onOpenChange }: NaturalLanguageIn
   const [isLoading, setIsLoading] = useState(false);
   const [parsedData, setParsedData] = useState<ParseNaturalLanguageInputOutput | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isAcceptingAll, setIsAcceptingAll] = useState(false); // New state for 'Accept All' loading
   const [aiInteraction, setAiInteraction] = useState<{
     prompt: string,
     response: string
@@ -59,6 +60,7 @@ export function NaturalLanguageInput({ isOpen, onOpenChange }: NaturalLanguageIn
       setParsedData(null);
       setIsLoading(false);
       setIsConfirming(false);
+      setIsAcceptingAll(false); // Reset on close
       setAiInteraction(null);
       setProcessedEventCount(0);
     }, 300);
@@ -89,6 +91,35 @@ export function NaturalLanguageInput({ isOpen, onOpenChange }: NaturalLanguageIn
 
   const handleEventProcessed = () => {
     setProcessedEventCount(prev => prev + 1);
+  };
+
+  const handleAcceptAll = async () => {
+    if (!parsedData || parsedData.events.length === 0) return;
+
+    setIsAcceptingAll(true);
+    const eventsToSave = parsedData.events.map(event => ({
+      title: event.title,
+      tags: event.tags,
+      startTime: new Date(event.startTime),
+      endTime: new Date(event.endTime),
+    }));
+
+    const result = await addEvents(eventsToSave);
+    setIsAcceptingAll(false);
+
+    if (result.success) {
+      toast({
+        title: 'All events saved!',
+        description: `${result.events?.length || 0} events have been successfully logged.`,
+      });
+      handleClose();
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Error saving all events',
+        description: result.error || 'There was an issue saving all events.',
+      });
+    }
   };
 
   if (isConfirming && parsedData) {
@@ -124,7 +155,6 @@ export function NaturalLanguageInput({ isOpen, onOpenChange }: NaturalLanguageIn
                     Inspect AI
                   </Button>
                 )}
-                {/* No 'Close' button needed here as form handles close on finish/cancel */}
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -140,7 +170,7 @@ export function NaturalLanguageInput({ isOpen, onOpenChange }: NaturalLanguageIn
       );
     }
 
-    // If more than one event, show the accordion view
+    // If more than one event, show the accordion view with 'Accept All'
     return (
       <>
         <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -148,7 +178,7 @@ export function NaturalLanguageInput({ isOpen, onOpenChange }: NaturalLanguageIn
             <DialogHeader>
               <DialogTitle>Review and Save Events</DialogTitle>
               <DialogDescription>
-                AI has parsed the following events from your input. Review, edit, and save them individually.
+                AI has parsed the following events from your input. Review, edit, and save them individually, or accept all.
               </DialogDescription>
             </DialogHeader>
             <Accordion type="single" collapsible className="w-full">
@@ -168,6 +198,13 @@ export function NaturalLanguageInput({ isOpen, onOpenChange }: NaturalLanguageIn
                   Inspect AI
                 </Button>
               )}
+              <Button
+                onClick={handleAcceptAll}
+                disabled={isAcceptingAll}
+              >
+                {isAcceptingAll && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Accept All
+              </Button>
               <Button onClick={handleClose}>
                 Close
               </Button>

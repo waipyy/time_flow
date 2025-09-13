@@ -7,6 +7,8 @@ import type { Tag } from '@/lib/types';
 import type { ParseNaturalLanguageInputOutput } from '@/ai/flows/parse-natural-language-input';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 
 type EventStatus = 'pending' | 'saved' | 'cancelled';
 
@@ -35,11 +37,19 @@ export function EventAccordionItem({ event, availableTags, onEventProcessed }: E
     }
   };
 
+  const formattedTime = `${format(new Date(event.startTime), 'h:mm a')} - ${format(new Date(event.endTime), 'h:mm a')}`;
+
   return (
-    <AccordionItem value={event.title}>
+    <AccordionItem value={event.title} disabled={status !== 'pending'}>
       <AccordionTrigger>
         <div className="flex items-center justify-between w-full pr-4">
-          <span>{event.title}</span>
+          <div className="flex flex-col items-start text-left">
+            <span className="font-semibold">{event.title}</span>
+            <span className="text-sm text-muted-foreground">{formattedTime}</span>
+            <div className="flex gap-1 mt-1">
+              {event.tags.map(tag => <Badge key={tag} variant="outline">{tag}</Badge>)}
+            </div>
+          </div>
           {getStatusIndicator()}
         </div>
       </AccordionTrigger>
