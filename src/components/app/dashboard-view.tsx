@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import type { TimeEvent, Goal, Tag } from '@/lib/types';
@@ -12,7 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { differenceInDays } from 'date-fns';
+import { startOfWeek, isWithinInterval } from 'date-fns';
 import { Hourglass, Trophy } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { getTimePeriodDateRange } from '@/lib/utils';
@@ -48,9 +49,15 @@ export function DashboardView({ events, goals, tags }: DashboardViewProps) {
     return <DashboardSkeleton />;
   }
 
+  const today = new Date();
+  const startOfThisWeek = startOfWeek(today, { weekStartsOn: 1 }); // 1 = Monday
+
   const weeklyTotalHours =
     events
-      .filter(e => differenceInDays(new Date(), new Date(e.startTime)) <= 7)
+      .filter(e => {
+        const eventDate = new Date(e.startTime);
+        return isWithinInterval(eventDate, { start: startOfThisWeek, end: today });
+      })
       .reduce((acc, event) => acc + event.duration, 0) / 60;
 
   const targetGoals = goals.filter(g => g.comparison === 'at-least');
@@ -81,9 +88,10 @@ export function DashboardView({ events, goals, tags }: DashboardViewProps) {
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
         <KpiCard
-          title="Weekly Hours Logged"
+          title="This Week's Hours Logged"
           value={`${weeklyTotalHours.toFixed(1)}h`}
           icon={Hourglass}
+          tooltip="Total hours logged from Monday to today."
         />
         <KpiCard
           title="Goal Achievement Rate"
@@ -97,7 +105,7 @@ export function DashboardView({ events, goals, tags }: DashboardViewProps) {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Time Breakdown by Tag (Last 7 Days)</CardTitle>
+              <CardTitle>Time Breakdown by Tag (This Week)</CardTitle>
             </CardHeader>
             <CardContent>
               <TimeBreakdownChart events={events} allTags={tags} />

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { TimeEvent, Tag } from '@/lib/types';
@@ -10,7 +11,7 @@ import {
   ChartLegendContent,
 } from '@/components/ui/chart';
 import { PieChart, Pie, Cell } from 'recharts';
-import { differenceInDays } from 'date-fns';
+import { startOfWeek, isWithinInterval } from 'date-fns';
 import { useMemo } from 'react';
 import { useTheme } from 'next-themes';
 import { getTagColor, getTagColorDark } from '@/lib/utils';
@@ -37,8 +38,11 @@ export function TimeBreakdownChart({ events: rawEvents, allTags }: TimeBreakdown
   
   const chartData = useMemo(() => {
     const tagDurations: { [key: string]: number } = {};
-    const recentEvents = events.filter(
-      e => differenceInDays(new Date(), e.startTime) <= 7
+    const today = new Date();
+    const startOfThisWeek = startOfWeek(today, { weekStartsOn: 1 }); // 1 = Monday
+
+    const recentEvents = events.filter(e => 
+      isWithinInterval(e.startTime, { start: startOfThisWeek, end: today })
     );
 
     recentEvents.forEach(event => {
@@ -71,7 +75,7 @@ export function TimeBreakdownChart({ events: rawEvents, allTags }: TimeBreakdown
   if (chartData.length === 0) {
     return (
       <div className="flex items-center justify-center h-[250px] text-muted-foreground">
-        No time logged in the last 7 days.
+        No time logged this week.
       </div>
     );
   }

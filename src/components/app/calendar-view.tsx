@@ -157,7 +157,6 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
     setDraggingEvent(null);
   };
 
-  // Function to determine overlaps and assign column/totalColumns
   const getEventsWithOverlapData = (day: Date, events: EventWithPosition[]): EventWithPosition[] => {
     const dayStart = startOfDay(toZonedTime(day, TIMEZONE));
     const dayEnd = endOfDay(toZonedTime(day, TIMEZONE));
@@ -172,49 +171,59 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
                isWithinInterval(eventEndZoned, { start: dayStart, end: dayEnd }) ||
                (eventStartZoned < dayStart && eventEndZoned > dayEnd);
       })
-      .sort((a, b) => a.startTime.getTime() - b.startTime.getTime()); // Sort by start time
+      .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+
+    if (eventsForDay.length === 0) {
+        return [];
+    }
+    
+    let eventGroups: EventWithPosition[][] = [];
+    let currentGroup: EventWithPosition[] = [eventsForDay[0]];
+    
+    for (let i = 1; i < eventsForDay.length; i++) {
+        const currentEvent = eventsForDay[i];
+        const lastEventInGroup = currentGroup[currentGroup.length - 1];
+
+        if (currentEvent.startTime < lastEventInGroup.endTime) {
+            currentGroup.push(currentEvent);
+        } else {
+            eventGroups.push(currentGroup);
+            currentGroup = [currentEvent];
+        }
+    }
+    eventGroups.push(currentGroup);
 
     const positionedEvents: EventWithPosition[] = [];
-    const columns: EventWithPosition[][] = []; // Array of arrays, each inner array is a column
+    for (const group of eventGroups) {
+        const columns: EventWithPosition[][] = [];
+        for (const event of group) {
+            let placed = false;
+            for (let i = 0; i < columns.length; i++) {
+                const column = columns[i];
+                const lastEventInColumn = column[column.length - 1];
+                if (event.startTime >= lastEventInColumn.endTime) {
+                    column.push(event);
+                    event.column = i;
+                    placed = true;
+                    break;
+                }
+            }
 
-    for (const event of eventsForDay) {
-      let placed = false;
-      for (let i = 0; i < columns.length; i++) {
-        const column = columns[i];
-        // Check if the current event overlaps with any event already in this column
-        const overlapsWithColumn = column.some(placedEvent => 
-          // An overlap occurs if their time intervals genuinely cross, but not if one ends exactly when the other begins.
-          event.startTime < placedEvent.endTime && event.endTime > placedEvent.startTime
-        );
-
-        if (!overlapsWithColumn) {
-          // Place event in this column
-          event.column = i;
-          column.push(event);
-          positionedEvents.push(event); 
-          placed = true;
-          break;
+            if (!placed) {
+                event.column = columns.length;
+                columns.push([event]);
+            }
         }
-      }
 
-      if (!placed) {
-        // Create a new column
-        event.column = columns.length;
-        columns.push([event]);
-        positionedEvents.push(event);
-      }
-    }
-
-    // After all events are placed, update totalColumns for each
-    const totalColumns = columns.length;
-    for (const event of positionedEvents) {
-      event.totalColumns = totalColumns;
+        const totalColumns = columns.length;
+        for (const event of group) {
+            event.totalColumns = totalColumns;
+            positionedEvents.push(event);
+        }
     }
 
     return positionedEvents;
-  };
-
-
+};
   const getEventStyle = (event: EventWithPosition, currentDay: Date) => {
     const startOfCurrentDay = startOfDay(toZonedTime(currentDay, TIMEZONE));
     const endOfCurrentDay = endOfDay(toZonedTime(currentDay, TIMEZONE));
@@ -237,20 +246,20 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
       height: `${durationHours * 4}rem`,
     };
 
-    if (event.column !== undefined && event.totalColumns !== undefined) {
-      const columnWidth = 100 / event.totalColumns;
-      const leftOffset = event.column * columnWidth;
+    if (event.column !== undefined && event.totalColumns !== undefined && event.totalColumns > 1) {
+      const widthPercentage = 98 / event.totalColumns; // 98% to leave a small gap
+      const leftPercentage = (event.column / event.totalColumns) * 98;
       return {
         ...baseStyle,
-        left: `${leftOffset}%`,
-        width: `${columnWidth}%`,
+        left: `${leftPercentage + 1}%`, // +1 for left offset
+        width: `${widthPercentage - 1}%`, // -1 for right offset
       };
     }
 
     return {
       ...baseStyle,
-      left: '0%',
-      width: '100%',
+      left: '1%',
+      width: '98%',
     };
   };
 
@@ -334,7 +343,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
                   {eventsWithPosition.map((event) => (
                       <div
                         key={event.id || 'placeholder-event'}
-                        className="absolute p-1 rounded text-white text-xs cursor-pointer z-20 flex items-center justify-center overflow-hidden" 
+                        className="absolute p-1 rounded text-white text-xs cursor-pointer z-20 flex items-center justify-center overflow-hidden" // Added overflow-hidden
                         style={{
                           ...getEventStyle(event, day),
                           backgroundColor: getTagColor(event.tags?.[0]),
