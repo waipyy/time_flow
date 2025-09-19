@@ -65,6 +65,38 @@ export function NaturalLanguageInput({
     }
   }, [isOpen]);
 
+  const handleParse = useCallback(
+    async (textToParse: string) => {
+      if (!textToParse.trim()) return;
+
+      setIsParsing(true);
+      setParsedEvents([]);
+
+      try {
+        const result = await parseNaturalLanguageInput({
+          text: textToParse,
+          availableTags: tags?.map((t) => t.name) || [],
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          now: new Date().toISOString(),
+        });
+        setParsedEvents(result.events);
+        // Temporarily remove setting AI interaction to simplify.
+        // setAiInteraction({ prompt, response: result });
+      } catch (error) {
+        console.error('Failed to parse natural language input:', error);
+        toast({
+          title: 'AI Parsing Error',
+          description:
+            'An unexpected error occurred while parsing your input. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsParsing(false);
+      }
+    },
+    [toast, tags]
+  );
+
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -116,38 +148,6 @@ export function NaturalLanguageInput({
       });
     }
   };
-
-  const handleParse = useCallback(
-    async (textToParse: string) => {
-      if (!textToParse.trim()) return;
-
-      setIsParsing(true);
-      setParsedEvents([]);
-
-      try {
-        const result = await parseNaturalLanguageInput({
-          text: textToParse,
-          availableTags: tags?.map((t) => t.name) || [],
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          now: new Date().toISOString(),
-        });
-        setParsedEvents(result.events);
-        // Temporarily remove setting AI interaction to simplify.
-        // setAiInteraction({ prompt, response: result });
-      } catch (error) {
-        console.error('Failed to parse natural language input:', error);
-        toast({
-          title: 'AI Parsing Error',
-          description:
-            'An unexpected error occurred while parsing your input. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsParsing(false);
-      }
-    },
-    [toast, tags]
-  );
 
   const handleAcceptAll = async () => {
     setIsAcceptingAll(true);
