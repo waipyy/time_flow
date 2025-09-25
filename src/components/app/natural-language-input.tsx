@@ -26,11 +26,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { addEvents } from '@/lib/actions';
 import type { TimeEvent, Tag } from '@/lib/types';
+import { Accordion } from '@/components/ui/accordion';
 
 import { AiDebugView } from './ai-debug-view';
-import { Accordion } from '../ui/accordion';
 import { EventAccordionItem } from './event-accordion-item';
-import { useEvents } from '@/hooks/use-events';
 
 // Extracted Content component
 const NaturalLanguageInputContent = ({
@@ -42,7 +41,6 @@ const NaturalLanguageInputContent = ({
   handleParse,
   parsedEvents,
   availableTags,
-  setParsedEvents,
 }: {
   prompt: string;
   setPrompt: (value: string) => void;
@@ -50,21 +48,9 @@ const NaturalLanguageInputContent = ({
   isRecording: boolean;
   isParsing: boolean;
   handleParse: (text: string) => void;
-  parsedEvents: ParseNaturalLanguageInputOutput['events'];
+  parsedEvents: Omit<TimeEvent, 'id' | 'duration'>[];
   availableTags: Tag[];
-  setParsedEvents: (events: ParseNaturalLanguageInputOutput['events']) => void;
-}) => {
-  const [processedEventCount, setProcessedEventCount] = useState(0);
-
-  useEffect(() => {
-    setProcessedEventCount(0);
-  }, [parsedEvents]);
-
-  const handleEventProcessed = () => {
-    setProcessedEventCount(prev => prev + 1);
-  };
-  
-  return (
+}) => (
   <div className="grid gap-4 py-4">
     <div className="grid gap-2">
       <Textarea
@@ -107,39 +93,38 @@ const NaturalLanguageInputContent = ({
 
     {parsedEvents.length > 0 && (
       <div className="space-y-2">
-        <div className="flex justify-between items-center pr-2">
-           <h3 className="font-semibold">Parsed Events</h3>
-           {processedEventCount > 0 && (
-            <span className="text-sm text-muted-foreground">
-              {processedEventCount} of {parsedEvents.length} saved
-            </span>
-          )}
+        <h3 className="font-semibold">Parsed Events</h3>
+        <div className="max-h-60 overflow-y-auto rounded-md border p-2">
+          <Accordion type="multiple" className="w-full">
+            {parsedEvents.map((event, index) => (
+              <EventAccordionItem
+                key={index}
+                event={event}
+                isNewlyCreated
+                availableTags={availableTags.map((t) => t.name)}
+              />
+            ))}
+          </Accordion>
         </div>
-        <Accordion type="single" collapsible className="w-full max-h-60 overflow-y-auto rounded-md border p-2">
-          {parsedEvents.map((event, index) => (
-            <EventAccordionItem
-              key={index}
-              event={event}
-              availableTags={availableTags}
-              onEventProcessed={handleEventProcessed}
-            />
-          ))}
-        </Accordion>
       </div>
     )}
   </div>
-)};
+);
 
 // Extracted Footer component
 const NaturalLanguageInputFooter = ({
   aiInteraction,
   setIsDebugViewOpen,
   parsedEvents,
+  handleAcceptAll,
+  isAcceptingAll,
   handleClose,
 }: {
   aiInteraction: AiInteraction | null;
   setIsDebugViewOpen: (isOpen: boolean) => void;
-  parsedEvents: TimeEvent[];
+  parsedEvents: Omit<TimeEvent, 'id' | 'duration'>[];
+  handleAcceptAll: () => void;
+  isAcceptingAll: boolean;
   handleClose: () => void;
 }) => (
   <>
@@ -154,13 +139,17 @@ const NaturalLanguageInputFooter = ({
         Inspect AI
       </Button>
     )}
+    {parsedEvents.length > 0 && (
+      <Button onClick={handleAcceptAll} disabled={isAcceptingAll}>
+        {isAcceptingAll && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        Accept All
+      </Button>
+    )}
     <Button variant="outline" onClick={handleClose}>
       Close
     </Button>
   </>
 );
-
-import type { ParseNaturalLanguageInputOutput } from '@/ai/flows/parse-natural-language-input';
 
 interface NaturalLanguageInputProps {
   isOpen: boolean;
@@ -180,7 +169,9 @@ export function NaturalLanguageInput({
 }: NaturalLanguageInputProps) {
   const [prompt, setPrompt] = useState('');
   const [isParsing, setIsParsing] = useState(false);
-  const [parsedEvents, setParsedEvents] = useState<ParseNaturalLanguageInputOutput['events']>([]);
+  const [parsedEvents, setParsedEvents] = useState<
+    Omit<TimeEvent, 'id' | 'duration'>[]
+  >([]);
   const [isAcceptingAll, setIsAcceptingAll] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [aiInteraction, setAiInteraction] = useState<AiInteraction | null>(
@@ -189,7 +180,6 @@ export function NaturalLanguageInput({
   const [isDebugViewOpen, setIsDebugViewOpen] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const { mutateEvents } = useEvents();
 
   const recognitionRef = useRef<any>(null);
 
@@ -200,30 +190,29 @@ export function NaturalLanguageInput({
       setIsParsing(true);
       setParsedEvents([]);
       try {
-        const availableTagNames = availableTags.map(tag => tag.name);
-        const result = await parseNaturalLanguageInput({
+        const tagNames = availableTags.map((tag) => tag.name);
+        const { events, ...debugInfo } = await parseNaturalLanguageInput({
           text: text,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           now: new Date().toISOString(),
-          availableTags: availableTagNames,
+          availableTags: tagNames,
         });
 
-        // The result now has a shape of { events: [...], ...debugInfo }
-        const { events, ...debugInfo } = result;
-
-        const eventsWithGuaranteedTags = events.map((event) => ({
+        const eventsWithTags = events.map((event) => ({
           ...event,
-          tags: event.tags || [],
+          tags: event.tags?.filter((tag) => tagNames.includes(tag)) || [],
         }));
 
-        setParsedEvents(eventsWithGuaranteedTags);
+        setParsedEvents(
+          eventsWithTags as Omit<TimeEvent, 'id' | 'duration'>[]
+        );
         setAiInteraction({ prompt: text, response: debugInfo });
       } catch (error) {
         console.error('Failed to parse natural language input:', error);
         toast({
           title: 'AI Parsing Error',
           description:
-            error instanceof Error ? error.message : 'An unexpected error occurred while parsing your input. Please try again.',
+            'An unexpected error occurred while parsing your input. Please try again.',
           variant: 'destructive',
         });
       } finally {
@@ -232,7 +221,7 @@ export function NaturalLanguageInput({
     },
     [toast, availableTags]
   );
-  
+
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -245,7 +234,6 @@ export function NaturalLanguageInput({
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setPrompt(transcript);
-        handleParse(transcript);
       };
 
       recognitionRef.current.onerror = (event: any) => {
@@ -262,7 +250,7 @@ export function NaturalLanguageInput({
         setIsRecording(false);
       };
     }
-  }, [toast, handleParse]);
+  }, [toast]);
 
   const handleAudioInput = () => {
     if (recognitionRef.current) {
@@ -284,24 +272,33 @@ export function NaturalLanguageInput({
     }
   };
 
-  const handleClose = () => {
-    // Only close if all events have been processed.
-    // Or if there are no events to process.
-    if (parsedEvents.every(e => e.status !== 'pending') || parsedEvents.length === 0) {
-      onOpenChange(false);
-      // Reset state on close
-      setTimeout(() => {
-        setPrompt('');
-        setParsedEvents([]);
-        setAiInteraction(null);
-      }, 300); // Delay to allow animations
-    } else {
+  const handleAcceptAll = async () => {
+    setIsAcceptingAll(true);
+    try {
+      await addEvents(parsedEvents);
       toast({
-        title: 'Unsaved Events',
-        description: 'Please save or cancel all parsed events before closing.',
-        variant: 'default',
+        title: 'Events Created',
+        description: 'The new events have been added to your calendar.',
       });
+      handleClose();
+    } catch (error) {
+      console.error('Failed to create events:', error);
+      toast({
+        title: 'Error Creating Events',
+        description:
+          'An unexpected error occurred while saving your events. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsAcceptingAll(false);
     }
+  };
+
+  const handleClose = () => {
+    onOpenChange(false);
+    setPrompt('');
+    setParsedEvents([]);
+    setAiInteraction(null);
   };
 
   if (isMobile) {
@@ -329,7 +326,6 @@ export function NaturalLanguageInput({
                 handleParse={handleParse}
                 parsedEvents={parsedEvents}
                 availableTags={availableTags}
-                setParsedEvents={setParsedEvents}
               />
             </div>
             <DrawerFooter>
@@ -337,6 +333,8 @@ export function NaturalLanguageInput({
                 aiInteraction={aiInteraction}
                 setIsDebugViewOpen={setIsDebugViewOpen}
                 parsedEvents={parsedEvents}
+                handleAcceptAll={handleAcceptAll}
+                isAcceptingAll={isAcceptingAll}
                 handleClose={handleClose}
               />
             </DrawerFooter>
@@ -356,7 +354,7 @@ export function NaturalLanguageInput({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={handleClose}>
+      <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center">
@@ -377,13 +375,14 @@ export function NaturalLanguageInput({
             handleParse={handleParse}
             parsedEvents={parsedEvents}
             availableTags={availableTags}
-            setParsedEvents={setParsedEvents}
           />
           <DialogFooter>
             <NaturalLanguageInputFooter
               aiInteraction={aiInteraction}
               setIsDebugViewOpen={setIsDebugViewOpen}
               parsedEvents={parsedEvents}
+              handleAcceptAll={handleAcceptAll}
+              isAcceptingAll={isAcceptingAll}
               handleClose={handleClose}
             />
           </DialogFooter>
@@ -393,8 +392,8 @@ export function NaturalLanguageInput({
         <AiDebugView
           isOpen={isDebugViewOpen}
           onOpenChange={setIsDebugViewOpen}
-          prompt={JSON.stringify(aiInteraction.prompt, null, 2)}
-          response={JSON.stringify(aiInteraction.response, null, 2)}
+          prompt={aiInteraction.prompt}
+          response={aiInteraction.response}
         />
       )}
     </>
