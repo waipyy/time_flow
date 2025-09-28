@@ -47,25 +47,32 @@ export const parseNaturalLanguageInputPrompt = ai.definePrompt({
 The current time is {{{now}}}.
 The user is in the {{{timezone}}} timezone.
 
-**CRITICAL ALGORITHM: YOU MUST FOLLOW THESE STEPS EXACTLY.**
+**COMMON SENSE TIME RULE: APPLY THIS LOGIC FIRST**
+- When a user gives an ambiguous time range that crosses a day boundary (e.g., "from 11 to 9 last night"), you MUST apply common sense.
+- For an activity like "sleep", "from 11 to 9" means from 11 PM on one day to 9 AM on the next day. It does NOT mean from 11 AM to 9 AM (22 hours).
+- If the start time is a larger number than the end time (e.g., 11 vs 9), assume it crosses midnight. The start time should be interpreted as PM and the end time as AM of the following day.
+- Always choose the most recent, logical time period. "last night" means the night that just passed.
+
+**CRITICAL ALGORITHM: FOLLOW THESE STEPS AFTER APPLYING THE COMMON SENSE RULE.**
 
 **Step 1: Identify the Events and their Chronological Order**
 - Find all distinct activities mentioned in the input (e.g., "Build AI project", "Eat").
 - Determine the sequence in which they occurred. Keywords like "before that" mean the event mentioned first happened *after* the event mentioned second.
 
-**Step 2: Anchor the Timeline**
+**Step 2: Anchor the Timeline (IF NO EXPLICIT TIMES ARE GIVEN)**
+- This step only applies if the user gives durations without explicit start/end times (e.g., "worked for 1 hour").
 - Find the **most recent event** in the sequence.
 - The \`endTime\` of this most recent event is **EXACTLY** the current time: \`{{{now}}}\`.
-- **CRITICAL**: When someone says "I just did X for Y minutes", they mean they **finished** doing X at the current time, not that they're **starting** X now.
+- **CRITICAL**: When someone says "I just did X for Y minutes", they mean they **finished** doing X at the current time.
 - **CRITICAL**: DO NOT use the current time as the \`startTime\` of any event. The current time is always an \`endTime\`.
 
-**Step 3: Chain Events Backward from the Anchor**
+**Step 3: Chain Events Backward from the Anchor (IF NO EXPLICIT TIMES ARE GIVEN)**
 - Calculate the \`startTime\` of the most recent event by subtracting its duration from its \`endTime\`.
 - For each preceding event in the sequence:
   - Its \`endTime\` becomes the \`startTime\` of the event that follows it chronologically.
   - Calculate its \`startTime\` by subtracting its duration from its \`endTime\`.
 
-**Example Walkthrough:**
+**Example Walkthrough (Duration-based):**
 - **Input**: "I built an AI project for 1 hour, before that I ate for 20 mins"
 - **Current Time**: 20:09:49 (8:09:49 PM)
 - **Execution**:
