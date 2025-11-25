@@ -186,7 +186,7 @@ export function NaturalLanguageInput({
   > | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const { mutate } = useEvents();
+  const { mutateEvents } = useEvents();
 
   const recognitionRef = useRef<any>(null);
 
@@ -301,7 +301,7 @@ export function NaturalLanguageInput({
         title: 'Events Created',
         description: 'The new events have been added to your calendar.',
       });
-      mutate();
+      mutateEvents();
       handleClose();
     } catch (error) {
       console.error('Failed to create events:', error);

@@ -2,7 +2,7 @@
 'use server';
 
 import { z } from 'zod';
-import type { Goal, TimeEvent, Tag } from './types';
+import type { Goal, TimeEvent, Tag, Task } from './types';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { parseNaturalLanguageInput, parseNaturalLanguageInputPrompt } from '@/ai/flows/parse-natural-language-input';
 import { getDb } from './firebase-admin';
@@ -291,5 +291,82 @@ revalidatePath('/');
   } catch (error) {
     console.error("Error deleting tag:", error);
     return { success: false, error: "Failed to delete tag." };
+  }
+}
+
+const taskSchema = z.object({
+  title: z.string().min(1, 'Task title is required'),
+  isCompleted: z.boolean().default(false),
+  deadline: z.union([z.string(), z.date()]).optional().transform(val => {
+    if (!val) return undefined;
+    return typeof val === 'string' ? new Date(val) : val;
+  }),
+  createdAt: z.union([z.string(), z.date()]).transform(val => typeof val === 'string' ? new Date(val) : val),
+  tags: z.array(z.string()).optional(),
+});
+
+export async function addTask(taskData: Omit<Task, 'id'>) {
+  try {
+    const validatedData = taskSchema.parse(taskData);
+    const db = getDb();
+    
+    // Ensure dates are Firestore compatible
+    const finalData = {
+        ...validatedData,
+        deadline: validatedData.deadline || null, // Firestore doesn't like undefined
+        createdAt: validatedData.createdAt || new Date(),
+    };
+
+    const ref = await db.collection('tasks').add(finalData);
+    
+    revalidateTag('tasks');
+    revalidatePath('/');
+    return { success: true, task: { ...finalData, id: ref.id } };
+  } catch (error) {
+    console.error("Error adding task:", error);
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors.map(e => e.message).join(', ') };
+    }
+    return { success: false, error: "Failed to create task." };
+  }
+}
+
+export async function updateTask(taskId: string, taskData: Partial<Task>) {
+  try {
+    const db = getDb();
+    
+    // We partial parse because we might only be updating status
+    const validatedData = taskSchema.partial().parse(taskData);
+    
+    // Ensure dates are Firestore compatible
+    const finalData = {
+        ...validatedData,
+    };
+    if (finalData.deadline === undefined) delete finalData.deadline;
+
+    await db.collection('tasks').doc(taskId).update(finalData);
+
+    revalidateTag('tasks');
+    revalidatePath('/');
+    return { success: true, task: { ...taskData, id: taskId } };
+  } catch (error) {
+    console.error("Error updating task:", error);
+     if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors.map(e => e.message).join(', ') };
+    }
+    return { success: false, error: "Failed to update task." };
+  }
+}
+
+export async function deleteTask(taskId: string) {
+  try {
+    const db = getDb();
+    await db.collection('tasks').doc(taskId).delete();
+    revalidateTag('tasks');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    return { success: false, error: "Failed to delete task." };
   }
 }

@@ -1,5 +1,5 @@
 
-import type { TimeEvent, Goal, Tag } from './types';
+import type { TimeEvent, Goal, Tag, Task } from './types';
 import { getDb } from './firebase-admin';
 import type { Firestore } from 'firebase-admin/firestore';
 
@@ -96,3 +96,26 @@ export const getTags = async (): Promise<Tag[]> => {
       return [];
     }
   };
+
+export const getTasks = async (): Promise<Task[]> => {
+  try {
+    const db = getDb();
+    // Order by creation time by default
+    const snapshot = await db.collection('tasks').orderBy('createdAt', 'desc').get();
+    if (snapshot.empty) {
+      return [];
+    }
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        deadline: data.deadline ? data.deadline.toDate().toISOString() : undefined,
+        createdAt: data.createdAt.toDate().toISOString(),
+      } as Task;
+    });
+  } catch (error) {
+    console.error("getTasks: Error fetching tasks:", error);
+    return [];
+  }
+};
