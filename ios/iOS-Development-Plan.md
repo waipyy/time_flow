@@ -72,9 +72,9 @@ TimeFlowApp/
 │   │   ├── NaturalLanguageInputView.swift
 │   │   └── AIParsingView.swift
 │   └── Components/
-│       ├── NavigationTabView.swift
-│       ├── LoadingView.swift
-│       └── ErrorView.swift
+│   │   ├── NavigationTabView.swift
+│   │   ├── LoadingView.swift
+│   │   └── ErrorView.swift
 ├── Services/
 │   ├── FirebaseService.swift             // Firebase integration
 │   ├── AIService.swift                   // Natural language processing
@@ -172,12 +172,33 @@ ContentView (TabView)
 
 ### Phase 1: Setup & Foundation
 
-#### Step 1: Xcode Project Setup and Configuration
-**Goal**: Create the foundation Xcode project with proper configuration and dependencies
-**Estimated Time**: 2 hours
+#### Step 1: Minimal Hello World App
+**Goal**: Create a minimal skeleton app to verify the development environment and basic project structure
+**Estimated Time**: 1 hour
 **Prerequisites**: None
 **Tasks**:
-- [ ] Create new iOS project in Xcode with SwiftUI
+- [ ] Create new iOS project in Xcode using SwiftUI
+- [ ] Clean up default boilerplate code
+- [ ] Display a simple blank page with "TimeFlow" placeholder text
+- [ ] Verify app runs on iPhone Simulator
+
+**Acceptance Criteria**:
+- [ ] Project builds successfully without errors
+- [ ] App launches on simulator
+- [ ] Screen displays "TimeFlow" text in the center
+- [ ] No extra generated code/files present
+
+**Files to Create/Modify**:
+- `TimeFlowApp.swift`
+- `ContentView.swift`
+
+**Testing**: Run the app on the simulator
+
+#### Step 2: Xcode Project Setup and Configuration
+**Goal**: Create the foundation Xcode project with proper configuration and dependencies
+**Estimated Time**: 2 hours
+**Prerequisites**: Step 1 completed
+**Tasks**:
 - [ ] Configure deployment target to iOS 15.0+
 - [ ] Add Firebase iOS SDK via SPM (Firebase/Firestore, Firebase/Auth)
 - [ ] Add Family Activity framework capability
@@ -198,10 +219,10 @@ ContentView (TabView)
 
 **Testing**: Build and run empty app on simulator and device
 
-#### Step 2: Firebase Integration and Basic Models
+#### Step 3: Firebase Integration and Basic Models
 **Goal**: Establish Firebase connection and create core data models
 **Estimated Time**: 3 hours
-**Prerequisites**: Step 1 completed
+**Prerequisites**: Step 2 completed
 **Tasks**:
 - [ ] Configure Firebase with existing project credentials
 - [ ] Create Swift models matching web app data structures
@@ -224,10 +245,10 @@ ContentView (TabView)
 
 **Testing**: Verify data synchronization with existing web app data
 
-#### Step 3: Core Navigation and Tab Structure
+#### Step 4: Core Navigation and Tab Structure
 **Goal**: Implement main navigation structure matching web app layout
 **Estimated Time**: 2 hours
-**Prerequisites**: Step 2 completed
+**Prerequisites**: Step 3 completed
 **Tasks**:
 - [ ] Create TabView with Dashboard, Calendar, Goals, Tags tabs
 - [ ] Implement basic placeholder views for each tab
@@ -252,10 +273,10 @@ ContentView (TabView)
 
 ### Phase 2: Data Layer
 
-#### Step 4: Events Data Layer and ViewModel
+#### Step 5: Events Data Layer and ViewModel
 **Goal**: Implement complete events data management with Firebase integration
 **Estimated Time**: 4 hours
-**Prerequisites**: Step 3 completed
+**Prerequisites**: Step 4 completed
 **Tasks**:
 - [ ] Create EventsViewModel with ObservableObject
 - [ ] Implement CRUD operations for events
@@ -278,10 +299,10 @@ ContentView (TabView)
 
 **Testing**: Perform CRUD operations and verify data persistence
 
-#### Step 5: Goals Data Layer and ViewModel
+#### Step 6: Goals Data Layer and ViewModel
 **Goal**: Implement goals management with progress calculation
 **Estimated Time**: 3 hours
-**Prerequisites**: Step 4 completed
+**Prerequisites**: Step 5 completed
 **Tasks**:
 - [ ] Create GoalsViewModel with Firebase integration
 - [ ] Implement goal CRUD operations
@@ -302,10 +323,10 @@ ContentView (TabView)
 
 **Testing**: Create goals and verify progress calculations
 
-#### Step 6: Tags Data Layer and ViewModel
+#### Step 7: Tags Data Layer and ViewModel
 **Goal**: Implement tag management with color support
 **Estimated Time**: 2 hours
-**Prerequisites**: Step 5 completed
+**Prerequisites**: Step 6 completed
 **Tasks**:
 - [ ] Create TagsViewModel with Firebase integration
 - [ ] Implement tag CRUD operations
@@ -328,10 +349,10 @@ ContentView (TabView)
 
 ### Phase 3: Core UI
 
-#### Step 7: Dashboard View Implementation
+#### Step 8: Dashboard View Implementation
 **Goal**: Create the main dashboard with KPI cards and charts
 **Estimated Time**: 4 hours
-**Prerequisites**: Step 6 completed
+**Prerequisites**: Step 7 completed
 **Tasks**:
 - [ ] Implement KPI cards (total time, events today, etc.)
 - [ ] Create time breakdown chart using Swift Charts
@@ -354,10 +375,10 @@ ContentView (TabView)
 
 **Testing**: Verify dashboard displays accurate data and updates in real-time
 
-#### Step 8: Event List and Detail Views
+#### Step 9: Event List and Detail Views
 **Goal**: Implement event browsing and detailed viewing
 **Estimated Time**: 3 hours
-**Prerequisites**: Step 7 completed
+**Prerequisites**: Step 8 completed
 **Tasks**:
 - [ ] Create scrollable event list with search
 - [ ] Implement event detail view with edit capability
@@ -379,10 +400,10 @@ ContentView (TabView)
 
 **Testing**: Browse events, search, filter, and perform actions
 
-#### Step 9: Event Form for Creating/Editing
+#### Step 10: Event Form for Creating/Editing
 **Goal**: Implement comprehensive event creation and editing
 **Estimated Time**: 4 hours
-**Prerequisites**: Step 8 completed
+**Prerequisites**: Step 9 completed
 **Tasks**:
 - [ ] Create event form with all fields (title, description, tags, times)
 - [ ] Implement date/time pickers
@@ -408,10 +429,10 @@ ContentView (TabView)
 
 ### Phase 4: Feature Implementation
 
-#### Step 10: Calendar View Implementation
+#### Step 11: Calendar View Implementation
 **Goal**: Create monthly and daily calendar views
 **Estimated Time**: 4 hours
-**Prerequisites**: Step 9 completed
+**Prerequisites**: Step 10 completed
 **Tasks**:
 - [ ] Implement monthly calendar grid
 - [ ] Add event indicators on calendar dates
@@ -434,10 +455,10 @@ ContentView (TabView)
 
 **Testing**: Navigate calendar, view events, and create new events from dates
 
-#### Step 11: Goals View and Progress Tracking
+#### Step 12: Goals View and Progress Tracking
 **Goal**: Implement goal management interface with progress visualization
 **Estimated Time**: 3 hours
-**Prerequisites**: Step 10 completed
+**Prerequisites**: Step 11 completed
 **Tasks**:
 - [ ] Create goals list with progress bars
 - [ ] Implement goal creation/editing form
@@ -459,10 +480,10 @@ ContentView (TabView)
 
 **Testing**: Create goals, track progress, and verify achievements
 
-#### Step 12: Tags Management Interface
+#### Step 13: Tags Management Interface
 **Goal**: Implement comprehensive tag management
 **Estimated Time**: 2 hours
-**Prerequisites**: Step 11 completed
+**Prerequisites**: Step 12 completed
 **Tasks**:
 - [ ] Create tags list with color indicators
 - [ ] Implement tag creation/editing with color picker
@@ -484,10 +505,10 @@ ContentView (TabView)
 
 **Testing**: Manage tags, verify colors, and check usage statistics
 
-#### Step 13: Natural Language Input Integration
+#### Step 14: Natural Language Input Integration
 **Goal**: Implement AI-powered natural language event creation
 **Estimated Time**: 4 hours
-**Prerequisites**: Step 12 completed
+**Prerequisites**: Step 13 completed
 **Tasks**:
 - [ ] Create natural language input interface
 - [ ] Integrate with existing AI service (Firebase Functions or direct API)
@@ -512,10 +533,10 @@ ContentView (TabView)
 
 ### Phase 5: iOS-Specific Features
 
-#### Step 14: Screen Time Permission Setup
+#### Step 15: Screen Time Permission Setup
 **Goal**: Implement Screen Time permission request flow
 **Estimated Time**: 2 hours
-**Prerequisites**: Step 13 completed
+**Prerequisites**: Step 14 completed
 **Tasks**:
 - [ ] Create permission request interface
 - [ ] Implement authorization status checking
@@ -537,10 +558,10 @@ ContentView (TabView)
 
 **Testing**: Test permission flow on device with Screen Time enabled
 
-#### Step 15: App Usage Data Collection
+#### Step 16: App Usage Data Collection
 **Goal**: Implement Screen Time data collection and processing
 **Estimated Time**: 4 hours
-**Prerequisites**: Step 14 completed
+**Prerequisites**: Step 15 completed
 **Tasks**:
 - [ ] Implement app usage data fetching
 - [ ] Create background data processing
@@ -562,10 +583,10 @@ ContentView (TabView)
 
 **Testing**: Verify usage data collection and event generation
 
-#### Step 16: Automatic Event Creation from Screen Time
+#### Step 17: Automatic Event Creation from Screen Time
 **Goal**: Convert Screen Time data into time events automatically
 **Estimated Time**: 3 hours
-**Prerequisites**: Step 15 completed
+**Prerequisites**: Step 16 completed
 **Tasks**:
 - [ ] Implement automatic event creation logic
 - [ ] Add duplicate detection and prevention
@@ -587,10 +608,10 @@ ContentView (TabView)
 
 **Testing**: Generate events from Screen Time and verify accuracy
 
-#### Step 17: Push Notifications Implementation
+#### Step 18: Push Notifications Implementation
 **Goal**: Add local and push notifications for goals and reminders
 **Estimated Time**: 3 hours
-**Prerequisites**: Step 16 completed
+**Prerequisites**: Step 17 completed
 **Tasks**:
 - [ ] Configure push notification capabilities
 - [ ] Implement local notifications for goal achievements
@@ -612,10 +633,10 @@ ContentView (TabView)
 
 **Testing**: Verify notifications trigger correctly and open appropriate views
 
-#### Step 18: Home Screen Widget Implementation
+#### Step 19: Home Screen Widget Implementation
 **Goal**: Create home screen widgets showing daily progress
 **Estimated Time**: 4 hours
-**Prerequisites**: Step 17 completed
+**Prerequisites**: Step 18 completed
 **Tasks**:
 - [ ] Create widget extension target
 - [ ] Implement small, medium, and large widget layouts
@@ -639,10 +660,10 @@ ContentView (TabView)
 
 ### Phase 6: Testing & Polish
 
-#### Step 19: Error Handling and Offline Support
+#### Step 20: Error Handling and Offline Support
 **Goal**: Implement comprehensive error handling and offline capabilities
 **Estimated Time**: 3 hours
-**Prerequisites**: Step 18 completed
+**Prerequisites**: Step 19 completed
 **Tasks**:
 - [ ] Add network connectivity monitoring
 - [ ] Implement offline data queuing
@@ -664,10 +685,10 @@ ContentView (TabView)
 
 **Testing**: Test app functionality with and without internet connection
 
-#### Step 20: Performance Optimization
+#### Step 21: Performance Optimization
 **Goal**: Optimize app performance and memory usage
 **Estimated Time**: 2 hours
-**Prerequisites**: Step 19 completed
+**Prerequisites**: Step 20 completed
 **Tasks**:
 - [ ] Profile app performance with Instruments
 - [ ] Optimize image loading and caching
@@ -688,10 +709,10 @@ ContentView (TabView)
 
 **Testing**: Use Instruments to measure performance improvements
 
-#### Step 21: Accessibility Implementation
+#### Step 22: Accessibility Implementation
 **Goal**: Ensure app is fully accessible to users with disabilities
 **Estimated Time**: 3 hours
-**Prerequisites**: Step 20 completed
+**Prerequisites**: Step 21 completed
 **Tasks**:
 - [ ] Add VoiceOver support to all views
 - [ ] Implement proper accessibility labels and hints
@@ -712,10 +733,10 @@ ContentView (TabView)
 
 **Testing**: Test app with VoiceOver and other accessibility features
 
-#### Step 22: App Store Preparation
+#### Step 23: App Store Preparation
 **Goal**: Prepare app for App Store submission
 **Estimated Time**: 4 hours
-**Prerequisites**: Step 21 completed
+**Prerequisites**: Step 22 completed
 **Tasks**:
 - [ ] Create app icons for all required sizes
 - [ ] Generate App Store screenshots
@@ -740,10 +761,10 @@ ContentView (TabView)
 
 ## Development Timeline Summary
 
-**Total Estimated Time**: 70 hours (approximately 9-10 weeks at 8 hours/week)
+**Total Estimated Time**: 71 hours (approximately 9-10 weeks at 8 hours/week)
 
 **Phase Breakdown**:
-- Phase 1 (Setup & Foundation): 7 hours
+- Phase 1 (Setup & Foundation): 8 hours
 - Phase 2 (Data Layer): 9 hours  
 - Phase 3 (Core UI): 11 hours
 - Phase 4 (Feature Implementation): 13 hours
@@ -763,4 +784,3 @@ ContentView (TabView)
 - Regular testing on various iOS versions and device sizes
 
 This plan provides a structured approach to developing a feature-complete iOS app that maintains parity with the existing web application while adding valuable iOS-specific enhancements.
-
