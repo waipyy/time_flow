@@ -1,16 +1,20 @@
 import Foundation
 import SwiftUI
 
-struct Event: Identifiable {
+struct Event: Identifiable, Equatable {
     let id: UUID
     var title: String
+    var description: String?
+    var tags: [String]
     var startTime: Date
     var endTime: Date
     var color: Color
     
-    init(id: UUID = UUID(), title: String, startTime: Date, endTime: Date, color: Color = .blue) {
+    init(id: UUID = UUID(), title: String, description: String? = nil, tags: [String] = [], startTime: Date, endTime: Date, color: Color = .blue) {
         self.id = id
         self.title = title
+        self.description = description
+        self.tags = tags
         self.startTime = startTime
         self.endTime = endTime
         self.color = color

@@ -8,6 +8,8 @@ struct CalendarView: View {
     private let startHour = 0
     private let endHour = 24
     
+    @State private var showingAddEvent = false
+
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -62,6 +64,20 @@ struct CalendarView: View {
             }
             .navigationTitle("TimeFlow")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showingAddEvent = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showingAddEvent) {
+                AddEventView { newEvent in
+                    events.append(newEvent)
+                }
+            }
         }
     }
     
