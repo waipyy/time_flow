@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CalendarView: View {
-    @State private var events: [Event] = Event.sampleEvents
+    @StateObject private var eventRepository = EventRepository()
     @State private var currentDate = Date()
     
     private let hourHeight: CGFloat = 60
@@ -64,7 +64,7 @@ struct CalendarView: View {
                         .padding(.top, 10) // Padding for first label
                         
                         // Events
-                        ForEach(events.filter { Calendar.current.isDate($0.startTime, inSameDayAs: currentDate) }) { event in
+                        ForEach(eventRepository.events.filter { Calendar.current.isDate($0.startTime, inSameDayAs: currentDate) }) { event in
                             EventView(event: event)
                                 .frame(height: height(for: event))
                                 .offset(x: 60, y: offset(for: event) + 10) // +10 matches top padding
@@ -96,21 +96,17 @@ struct CalendarView: View {
             }
             .sheet(isPresented: $showingAddEvent) {
                 AddEventView { newEvent in
-                    events.append(newEvent)
+                    eventRepository.addEvent(newEvent)
                 }
             }
             .sheet(item: $selectedEvent) { event in
                 AddEventView(
                     eventToEdit: event,
                     onSave: { updatedEvent in
-                        if let index = events.firstIndex(where: { $0.id == updatedEvent.id }) {
-                            events[index] = updatedEvent
-                        }
+                        eventRepository.updateEvent(updatedEvent)
                     },
                     onDelete: { eventToDelete in
-                        if let index = events.firstIndex(where: { $0.id == eventToDelete.id }) {
-                            events.remove(at: index)
-                        }
+                        eventRepository.deleteEvent(eventToDelete)
                     }
                 )
             }
