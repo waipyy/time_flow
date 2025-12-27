@@ -16,10 +16,27 @@ struct CalendarView: View {
             VStack(spacing: 0) {
                 // Header
                 HStack {
+                    Button(action: {
+                        changeDate(by: -1)
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .padding()
+                    }
+                    
+                    Spacer()
+                    
                     Text(currentDate.formatted(date: .complete, time: .omitted))
                         .font(.headline)
-                        .padding()
+                        .padding(.vertical)
+                    
                     Spacer()
+                    
+                    Button(action: {
+                        changeDate(by: 1)
+                    }) {
+                        Image(systemName: "chevron.right")
+                            .padding()
+                    }
                 }
                 .background(Color(uiColor: .systemBackground))
                 .shadow(radius: 1)
@@ -47,7 +64,7 @@ struct CalendarView: View {
                         .padding(.top, 10) // Padding for first label
                         
                         // Events
-                        ForEach(events) { event in
+                        ForEach(events.filter { Calendar.current.isDate($0.startTime, inSameDayAs: currentDate) }) { event in
                             EventView(event: event)
                                 .frame(height: height(for: event))
                                 .offset(x: 60, y: offset(for: event) + 10) // +10 matches top padding
@@ -97,6 +114,13 @@ struct CalendarView: View {
                     }
                 )
             }
+        }
+    }
+    
+    // Helper functions for layout
+    private func changeDate(by days: Int) {
+        if let newDate = Calendar.current.date(byAdding: .day, value: days, to: currentDate) {
+            currentDate = newDate
         }
     }
     
