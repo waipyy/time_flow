@@ -9,6 +9,7 @@ struct CalendarView: View {
     private let endHour = 24
     
     @State private var showingAddEvent = false
+    @State private var selectedEvent: Event?
 
     var body: some View {
         NavigationView {
@@ -51,6 +52,9 @@ struct CalendarView: View {
                                 .frame(height: height(for: event))
                                 .offset(x: 60, y: offset(for: event) + 10) // +10 matches top padding
                                 .padding(.trailing, 70) // Prevent going off screen
+                                .onTapGesture {
+                                    selectedEvent = event
+                                }
                         }
                         
                         // Current Time Indicator (if today)
@@ -77,6 +81,21 @@ struct CalendarView: View {
                 AddEventView { newEvent in
                     events.append(newEvent)
                 }
+            }
+            .sheet(item: $selectedEvent) { event in
+                AddEventView(
+                    eventToEdit: event,
+                    onSave: { updatedEvent in
+                        if let index = events.firstIndex(where: { $0.id == updatedEvent.id }) {
+                            events[index] = updatedEvent
+                        }
+                    },
+                    onDelete: { eventToDelete in
+                        if let index = events.firstIndex(where: { $0.id == eventToDelete.id }) {
+                            events.remove(at: index)
+                        }
+                    }
+                )
             }
         }
     }
