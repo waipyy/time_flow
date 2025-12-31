@@ -10,10 +10,15 @@ struct Event: Identifiable, Equatable, Codable {
     var tags: [String]
     var startTime: Date
     var endTime: Date
-    var colorHex: String
+    var colorHex: String? // Web app doesn't send this
     
     var color: Color {
-        get { Color(hex: colorHex) }
+        get { 
+            if let hex = colorHex {
+                return Color(hex: hex)
+            }
+            return .blue // Default color
+        }
         set { colorHex = newValue.toHex() ?? "#0000FF" }
     }
     
@@ -25,6 +30,38 @@ struct Event: Identifiable, Equatable, Codable {
         self.startTime = startTime
         self.endTime = endTime
         self.colorHex = color.toHex() ?? "#0000FF"
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case description
+        case tags
+        case startTime
+        case endTime
+        case colorHex
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        _id = try container.decode(DocumentID<String>.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
+        startTime = try container.decode(Date.self, forKey: .startTime)
+        endTime = try container.decode(Date.self, forKey: .endTime)
+        colorHex = try container.decodeIfPresent(String.self, forKey: .colorHex)
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(description, forKey: .description)
+        try container.encode(tags, forKey: .tags)
+        try container.encode(startTime, forKey: .startTime)
+        try container.encode(endTime, forKey: .endTime)
+        try container.encode(colorHex, forKey: .colorHex)
     }
 }
 

@@ -9,7 +9,22 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        CalendarView()
+        TabView {
+            CalendarView()
+                .tabItem {
+                    Label("Calendar", systemImage: "calendar")
+                }
+            
+            GoalsView()
+                .tabItem {
+                    Label("Goals", systemImage: "target")
+                }
+            
+            TagsView()
+                .tabItem {
+                    Label("Tags", systemImage: "tag")
+                }
+        }
     }
 }
 
