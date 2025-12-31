@@ -81,8 +81,8 @@ struct AddEventView: View {
     private func saveEvent() {
         let tags = tagsString.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         
-        // Use existing ID if editing, otherwise new UUID
-        let id = eventToEdit?.id ?? UUID()
+        // Use existing ID if editing, otherwise nil (Firestore will generate)
+        let id = eventToEdit?.id
         
         let newEvent = Event(
             id: id,

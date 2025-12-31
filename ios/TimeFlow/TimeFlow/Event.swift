@@ -1,8 +1,7 @@
-import Foundation
 import SwiftUI
 import UIKit
 
-import FirebaseFirestoreSwift
+import FirebaseFirestore
 
 struct Event: Identifiable, Equatable, Codable {
     @DocumentID var id: String?
