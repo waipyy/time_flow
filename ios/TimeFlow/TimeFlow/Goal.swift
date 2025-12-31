@@ -43,4 +43,14 @@ struct Goal: Identifiable, Codable, Equatable {
         timePeriod = try container.decodeIfPresent(String.self, forKey: .timePeriod) ?? "daily"
         comparison = try container.decodeIfPresent(String.self, forKey: .comparison) ?? "at-least"
     }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(eligibleTags, forKey: .eligibleTags)
+        try container.encode(targetAmount, forKey: .targetAmount)
+        try container.encode(timePeriod, forKey: .timePeriod)
+        try container.encode(comparison, forKey: .comparison)
+    }
 }
