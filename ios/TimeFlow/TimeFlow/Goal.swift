@@ -29,7 +29,7 @@ struct Goal: Identifiable, Codable, Equatable {
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        _id = try container.decode(DocumentID<String>.self, forKey: .id)
+        id = try container.decodeIfPresent(String.self, forKey: .id)
         
         // Handle name/title potential mismatch
         if let title = try? container.decodeIfPresent(String.self, forKey: .title) {

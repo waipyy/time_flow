@@ -44,7 +44,7 @@ struct Event: Identifiable, Equatable, Codable {
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        _id = try container.decode(DocumentID<String>.self, forKey: .id)
+        id = try container.decodeIfPresent(String.self, forKey: .id)
         title = try container.decode(String.self, forKey: .title)
         description = try container.decodeIfPresent(String.self, forKey: .description)
         tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
