@@ -2,8 +2,10 @@ import Foundation
 import SwiftUI
 import UIKit
 
+import FirebaseFirestoreSwift
+
 struct Event: Identifiable, Equatable, Codable {
-    let id: UUID
+    @DocumentID var id: String?
     var title: String
     var description: String?
     var tags: [String]
@@ -16,7 +18,7 @@ struct Event: Identifiable, Equatable, Codable {
         set { colorHex = newValue.toHex() ?? "#0000FF" }
     }
     
-    init(id: UUID = UUID(), title: String, description: String? = nil, tags: [String] = [], startTime: Date, endTime: Date, color: Color = .blue) {
+    init(id: String? = nil, title: String, description: String? = nil, tags: [String] = [], startTime: Date, endTime: Date, color: Color = .blue) {
         self.id = id
         self.title = title
         self.description = description

@@ -27,12 +27,7 @@ class EventRepository: ObservableObject {
             }
             
             self?.events = documents.compactMap { queryDocumentSnapshot -> Event? in
-                do {
-                    return try queryDocumentSnapshot.data(as: Event.self)
-                } catch {
-                    print("Error decoding document: \(queryDocumentSnapshot.documentID), error: \(error)")
-                    return nil
-                }
+                return try? queryDocumentSnapshot.data(as: Event.self)
             }
         }
     }
@@ -44,18 +39,24 @@ class EventRepository: ObservableObject {
     
     func addEvent(_ event: Event) {
         do {
-            try db.collection("events").document(event.id.uuidString).setData(from: event)
+            if let id = event.id {
+                try db.collection("events").document(id).setData(from: event)
+            } else {
+                _ = try db.collection("events").addDocument(from: event)
+            }
         } catch {
             print("Error adding event: \(error)")
         }
     }
     
     func updateEvent(_ event: Event) {
-        addEvent(event) // Overwrites with new data
+        addEvent(event)
     }
     
     func deleteEvent(_ event: Event) {
-        db.collection("events").document(event.id.uuidString).delete { error in
+        guard let id = event.id else { return }
+        
+        db.collection("events").document(id).delete { error in
             if let error = error {
                 print("Error removing event: \(error)")
             }
