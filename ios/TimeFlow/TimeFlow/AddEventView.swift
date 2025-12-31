@@ -7,13 +7,14 @@ struct AddEventView: View {
     var onSave: (Event) -> Void
     var onDelete: ((Event) -> Void)?
     
+    @StateObject private var tagRepository = TagRepository()
+    
     // Form States
     @State private var title: String
     @State private var description: String
-    @State private var tagsString: String
+    @State private var selectedTagId: String = "" // Single tag selection for now
     @State private var startTime: Date
     @State private var endTime: Date
-    @State private var color: Color
     
     init(eventToEdit: Event? = nil, onSave: @escaping (Event) -> Void, onDelete: ((Event) -> Void)? = nil) {
         self.eventToEdit = eventToEdit
@@ -22,15 +23,15 @@ struct AddEventView: View {
         
         _title = State(initialValue: eventToEdit?.title ?? "")
         _description = State(initialValue: eventToEdit?.description ?? "")
-        _tagsString = State(initialValue: eventToEdit?.tags.joined(separator: ", ") ?? "")
+        // Pre-select the first tag if available, otherwise empty
+        _selectedTagId = State(initialValue: eventToEdit?.tags.first ?? "")
         _startTime = State(initialValue: eventToEdit?.startTime ?? Date())
         _endTime = State(initialValue: eventToEdit?.endTime ?? Date().addingTimeInterval(3600))
-        _color = State(initialValue: eventToEdit?.color ?? .blue)
     }
     
     // Validation
     private var isValid: Bool {
-        !title.isEmpty && endTime > startTime
+        !title.isEmpty && endTime > startTime && !selectedTagId.isEmpty
     }
     
     var body: some View {
@@ -39,16 +40,31 @@ struct AddEventView: View {
                 Section(header: Text("Details")) {
                     TextField("Title", text: $title)
                     TextField("Description (Optional)", text: $description)
-                    TextField("Tags (comma separated)", text: $tagsString)
+                }
+                
+                Section(header: Text("Tag")) {
+                    if tagRepository.tags.isEmpty {
+                        Text("No tags available. Please create a tag first.")
+                            .foregroundColor(.secondary)
+                    } else {
+                        Picker("Select Tag", selection: $selectedTagId) {
+                            Text("Select a Tag").tag("")
+                            ForEach(tagRepository.tags) { tag in
+                                HStack {
+                                    Circle()
+                                        .fill(Color(hex: tag.color))
+                                        .frame(width: 10, height: 10)
+                                    Text(tag.name)
+                                }
+                                .tag(tag.name) // Using name as ID for now to match Event model (array of strings)
+                            }
+                        }
+                    }
                 }
                 
                 Section(header: Text("Time")) {
                     DatePicker("Start Time", selection: $startTime)
                     DatePicker("End Time", selection: $endTime)
-                }
-                
-                Section(header: Text("Appearance")) {
-                    ColorPicker("Event Color", selection: $color)
                 }
                 
                 if let event = eventToEdit, let onDelete = onDelete {
@@ -79,20 +95,24 @@ struct AddEventView: View {
     }
     
     private func saveEvent() {
-        let tags = tagsString.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        // Find the selected tag to get its color
+        let tagColorHex = tagRepository.tags.first(where: { $0.name == selectedTagId })?.color ?? "#0000FF"
+        let tags = [selectedTagId]
         
         // Use existing ID if editing, otherwise nil (Firestore will generate)
         let id = eventToEdit?.id
         
-        let newEvent = Event(
+        var newEvent = Event(
             id: id,
             title: title,
             description: description.isEmpty ? nil : description,
             tags: tags,
             startTime: startTime,
-            endTime: endTime,
-            color: color
+            endTime: endTime
         )
+        // Explicitly set the color from the tag
+        newEvent.colorHex = tagColorHex
+        
         onSave(newEvent)
         dismiss()
     }

@@ -2,17 +2,24 @@ import SwiftUI
 
 struct GoalsView: View {
     @StateObject private var repository = GoalRepository()
+    @State private var showingAddGoal = false
+    @State private var selectedGoal: Goal?
     
     var body: some View {
         NavigationView {
             List {
                 ForEach(repository.goals) { goal in
-                    VStack(alignment: .leading) {
-                        Text(goal.name)
-                            .font(.headline)
-                        Text("\(goal.targetAmount.formatted()) hours / \(goal.timePeriod)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    Button {
+                        selectedGoal = goal
+                    } label: {
+                        VStack(alignment: .leading) {
+                            Text(goal.name)
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            Text("\(goal.comparison == "at-least" ? "≥" : "≤") \(goal.targetAmount.formatted())h / \(goal.timePeriod)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 }
                 .onDelete { indexSet in
@@ -26,11 +33,27 @@ struct GoalsView: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
-                        // TODO: Implement Add Goal Sheet
+                        showingAddGoal = true
                     } label: {
                         Image(systemName: "plus")
                     }
                 }
+            }
+            .sheet(isPresented: $showingAddGoal) {
+                AddGoalView(onSave: { newGoal in
+                    repository.addGoal(newGoal)
+                })
+            }
+            .sheet(item: $selectedGoal) { goal in
+                AddGoalView(
+                    goalToEdit: goal,
+                    onSave: { updatedGoal in
+                        repository.updateGoal(updatedGoal)
+                    },
+                    onDelete: { goalToDelete in
+                        repository.deleteGoal(goalToDelete)
+                    }
+                )
             }
             .overlay {
                 if repository.goals.isEmpty {
