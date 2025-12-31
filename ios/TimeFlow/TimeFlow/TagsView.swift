@@ -4,7 +4,7 @@ struct TagsView: View {
     @StateObject private var repository = TagRepository()
     @State private var showingAddTag = false
     @State private var newTagName = ""
-    @State private var newTagColor = "#FF0000"
+    @State private var newTagColor = Color.red
     
     var body: some View {
         NavigationView {
@@ -28,21 +28,40 @@ struct TagsView: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
+                        newTagName = ""
+                        newTagColor = .red
                         showingAddTag = true
                     } label: {
                         Image(systemName: "plus")
                     }
                 }
             }
-            .alert("New Tag", isPresented: $showingAddTag) {
-                TextField("Tag Name", text: $newTagName)
-                Button("Add") {
-                    let tag = Tag(name: newTagName, color: newTagColor)
-                    repository.addTag(tag)
-                    newTagName = ""
-                    newTagColor = "#" + String(Int.random(in: 0...0xFFFFFF), radix: 16, uppercase: true) // Random color next
+            .sheet(isPresented: $showingAddTag) {
+                NavigationView {
+                    Form {
+                        Section(header: Text("Tag Details")) {
+                            TextField("Tag Name", text: $newTagName)
+                            ColorPicker("Color", selection: $newTagColor)
+                        }
+                    }
+                    .navigationTitle("New Tag")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") {
+                                showingAddTag = false
+                            }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Add") {
+                                let tag = Tag(name: newTagName, color: newTagColor.toHex() ?? "#FF0000")
+                                repository.addTag(tag)
+                                showingAddTag = false
+                            }
+                            .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                    }
                 }
-                Button("Cancel", role: .cancel) { }
+                .presentationDetents([.medium])
             }
         }
     }
