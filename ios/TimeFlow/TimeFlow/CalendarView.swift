@@ -64,7 +64,11 @@ struct CalendarView: View {
                         .padding(.top, 10) // Padding for first label
                         
                         // Events
-                        ForEach(eventRepository.events.filter { Calendar.current.isDate($0.startTime, inSameDayAs: currentDate) }) { event in
+                        ForEach(eventRepository.events.filter { event in
+                            let startOfDay = Calendar.current.startOfDay(for: currentDate)
+                            let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
+                            return event.endTime > startOfDay && event.startTime < endOfDay
+                        }) { event in
                             EventView(event: event)
                                 .frame(height: height(for: event))
                                 .offset(x: 60, y: offset(for: event) + 10) // +10 matches top padding

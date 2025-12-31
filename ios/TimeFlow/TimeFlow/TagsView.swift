@@ -15,7 +15,7 @@ struct TagsView: View {
                         // Prepare for editing
                         tagToEdit = tag
                         newTagName = tag.name
-                        newTagColor = Color(hex: tag.color)
+                        newTagColor = Color(hex: tag.color) // Load existing color
                         showingAddTag = true
                     } label: {
                         HStack {

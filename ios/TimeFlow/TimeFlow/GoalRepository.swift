@@ -27,7 +27,11 @@ class GoalRepository: ObservableObject {
             }
             
             self?.goals = documents.compactMap { queryDocumentSnapshot -> Goal? in
-                return try? queryDocumentSnapshot.data(as: Goal.self)
+                if var goal = try? queryDocumentSnapshot.data(as: Goal.self) {
+                    goal.id = queryDocumentSnapshot.documentID
+                    return goal
+                }
+                return nil
             }
         }
     }

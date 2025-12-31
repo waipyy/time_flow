@@ -27,7 +27,11 @@ class TagRepository: ObservableObject {
             }
             
             self?.tags = documents.compactMap { queryDocumentSnapshot -> Tag? in
-                return try? queryDocumentSnapshot.data(as: Tag.self)
+                if var tag = try? queryDocumentSnapshot.data(as: Tag.self) {
+                    tag.id = queryDocumentSnapshot.documentID
+                    return tag
+                }
+                return nil
             }
         }
     }

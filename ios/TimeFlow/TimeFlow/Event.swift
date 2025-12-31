@@ -4,7 +4,7 @@ import UIKit
 import FirebaseFirestore
 
 struct Event: Identifiable, Equatable, Codable {
-    @DocumentID var id: String?
+    var id: String?
     var title: String
     var description: String?
     var tags: [String]

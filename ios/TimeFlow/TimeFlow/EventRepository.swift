@@ -26,9 +26,11 @@ class EventRepository: ObservableObject {
                 return
             }
             
-            self?.events = documents.compactMap { queryDocumentSnapshot -> Event? in
-                return try? queryDocumentSnapshot.data(as: Event.self)
-            }
+                if var event = try? queryDocumentSnapshot.data(as: Event.self) {
+                    event.id = queryDocumentSnapshot.documentID
+                    return event
+                }
+                return nil
         }
     }
     

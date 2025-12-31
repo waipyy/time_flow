@@ -1,7 +1,7 @@
 import FirebaseFirestore
 
 struct Goal: Identifiable, Codable, Equatable {
-    @DocumentID var id: String?
+    var id: String?
     var name: String
     var eligibleTags: [String]
     var targetAmount: Double
