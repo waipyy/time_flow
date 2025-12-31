@@ -33,6 +33,5 @@ Thumbs.db
 *.log
 
 # Firebase
-ios/TimeFlowApp/GoogleService-Info.plist
 ios/TimeFlow/TimeFlow/GoogleService-Info.plist
 

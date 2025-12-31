@@ -4,7 +4,7 @@ import Combine
 
 class EventRepository: ObservableObject {
     @Published var events: [Event] = []
-    private var db = Firestore.firestore()
+    private var db = Firestore.firestore(database: "timeflow")
     private var listenerRegistration: ListenerRegistration?
     
     init() {
