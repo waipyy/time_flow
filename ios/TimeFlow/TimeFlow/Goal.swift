@@ -29,6 +29,7 @@ struct Goal: Identifiable, Codable, Equatable {
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        // Manual decoding for id (ignoring @DocumentID since it's removed)
         id = try container.decodeIfPresent(String.self, forKey: .id)
         
         // Handle name/title potential mismatch
