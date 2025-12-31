@@ -27,7 +27,12 @@ class EventRepository: ObservableObject {
             }
             
             self?.events = documents.compactMap { queryDocumentSnapshot -> Event? in
-                return try? queryDocumentSnapshot.data(as: Event.self)
+                do {
+                    return try queryDocumentSnapshot.data(as: Event.self)
+                } catch {
+                    print("Error decoding document: \(queryDocumentSnapshot.documentID), error: \(error)")
+                    return nil
+                }
             }
         }
     }
