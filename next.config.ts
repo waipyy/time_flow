@@ -1,5 +1,8 @@
 
-import type {NextConfig} from 'next';
+// Import polyfill before anything else to fix Node.js v25 localStorage incompatibility
+import './src/lib/polyfill-localstorage';
+
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */

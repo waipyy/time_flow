@@ -1,4 +1,6 @@
 
+'use client';
+
 import {
   Sidebar,
   SidebarContent as SidebarContentWrapper,
@@ -11,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MainContent } from '@/components/app/main-content';
 import { SidebarContent } from '@/components/app/sidebar-content';
 
-export default async function Home() {
+export default function Home() {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen bg-background">
