@@ -9,6 +9,7 @@ export interface TimeEvent {
   title: string;
   startTime: Date;
   endTime: Date;
+  duration: number; // Duration in minutes
   tags?: string[]; // Array of tag names
 }
 
