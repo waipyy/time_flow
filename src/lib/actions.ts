@@ -23,8 +23,11 @@ export async function addEvent(eventData: Omit<TimeEvent, 'id' | 'duration'>) {
       endTimeISO: endTime.toISOString(),
     });
 
+    // Explicitly construct the event data to ensure only tagIds is stored (not deprecated tags field)
     const newEventData = {
-      ...eventData,
+      title: eventData.title,
+      description: eventData.description,
+      tagIds: eventData.tagIds || [],
       duration,
       startTime,
       endTime,
@@ -53,8 +56,11 @@ export async function addEvents(eventsData: Omit<TimeEvent, 'id' | 'duration'>[]
       const endTime = typeof eventData.endTime === 'string' ? new Date(eventData.endTime) : eventData.endTime;
       const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
 
+      // Explicitly construct the event data to ensure only tagIds is stored
       const newEventData = {
-        ...eventData,
+        title: eventData.title,
+        description: eventData.description,
+        tagIds: eventData.tagIds || [],
         duration,
         startTime,
         endTime,
@@ -84,8 +90,11 @@ export async function updateEvent(eventId: string, eventData: Omit<TimeEvent, 'i
 
     const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
 
+    // Explicitly construct the event data to ensure only tagIds is stored
     const updatedEventData = {
-      ...eventData,
+      title: eventData.title,
+      description: eventData.description,
+      tagIds: eventData.tagIds || [],
       duration,
       startTime,
       endTime,
