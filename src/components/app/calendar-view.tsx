@@ -297,7 +297,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
           {/* Time column */}
           <div className="w-20 border-r text-sm shrink-0">
             {/* Spacer to align with the sticky day headers */}
-            <div className="sticky top-0 bg-background z-10 text-center p-2 border-b">
+            <div className="sticky top-0 bg-background z-30 text-center p-2 border-b">
               <p className="text-sm font-medium invisible">Mon</p>
               <p className="text-2xl font-semibold invisible">8</p>
             </div>
@@ -323,7 +323,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
               const eventsWithPosition = getEventsWithOverlapData(day, displayedEvents as EventWithPosition[]);
               return (
                 <div key={day.toString()} className="relative border-l">
-                  <div className="sticky top-0 bg-background z-10 text-center p-2 border-b">
+                  <div className="sticky top-0 bg-background z-30 text-center p-2 border-b">
                     <p className="text-sm font-medium">{formatInTimeZone(day, TIMEZONE, 'EEE')}</p>
                     <p className="text-2xl font-semibold">{formatInTimeZone(day, TIMEZONE, 'd')}</p>
                   </div>
