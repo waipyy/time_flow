@@ -50,7 +50,7 @@ export function MainContent() {
     "flex-1",
     currentView === 'calendar'
       ? 'flex flex-col overflow-hidden'
-      : 'p-4 sm:p-6 lg:p-8'
+      : 'p-4 sm:p-6 lg:p-8 overflow-auto'
   );
 
   return (

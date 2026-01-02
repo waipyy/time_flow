@@ -97,7 +97,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetY = e.clientY - rect.top;
 
-    // The container's total height is 24 hours * 4rem/hour = 96rem
+    // The container's total height is 24 hours * 2.5rem/hour = 60rem
     // We can calculate the fraction of the day that has passed based on the click position
     const totalHours = (offsetY / rect.height) * 24;
     const hour = Math.floor(totalHours);
@@ -244,8 +244,8 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
     const durationHours = (endOfEventOnDay.getTime() - startOfEventOnDay.getTime()) / (1000 * 60 * 60);
 
     const baseStyle = {
-      top: `${startHour * 4}rem`, // 4rem per hour
-      height: `${durationHours * 4}rem`,
+      top: `${startHour * 2.5}rem`, // 2.5rem per hour
+      height: `${durationHours * 2.5}rem`,
     };
 
     if (event.column !== undefined && event.totalColumns !== undefined && event.totalColumns > 1) {
@@ -308,7 +308,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
                 return (
                   <div
                     key={hour}
-                    className="h-16 text-right pr-2 text-xs text-muted-foreground border-t flex items-center"
+                    className="h-10 text-right pr-2 text-xs text-muted-foreground border-t flex items-center"
                   >
                     {formattedLabel}
                   </div>
@@ -318,7 +318,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
           </div>
 
           {/* Day columns */}
-          <div className="flex-1 grid" style={{ gridTemplateColumns: 'repeat(7, minmax(140px, 1fr))' }} onMouseLeave={() => setDragStartDate(null)}>
+          <div className="flex-1 grid" style={{ gridTemplateColumns: 'repeat(7, minmax(200px, 1fr))' }} onMouseLeave={() => setDragStartDate(null)}>
             {week.map((day) => {
               const eventsWithPosition = getEventsWithOverlapData(day, displayedEvents as EventWithPosition[]);
               return (
@@ -328,7 +328,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
                     <p className="text-2xl font-semibold">{formatInTimeZone(day, TIMEZONE, 'd')}</p>
                   </div>
                   <div
-                    className="relative h-[96rem]" // Explicit height for event positioning
+                    className="relative h-[60rem]" // Explicit height for event positioning
                     onMouseDown={(e) => handleMouseDown(day, e)}
                     onMouseMove={(e) => handleMouseMove(day, e)}
                     onMouseUp={handleMouseUp}
@@ -337,7 +337,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
                     {hours.map((hour) => (
                       <div
                         key={hour}
-                        className="h-16 border-t"
+                        className="h-10 border-t"
                         style={{ pointerEvents: 'none' }} // Disable pointer events on individual slots
                       ></div>
                     ))}

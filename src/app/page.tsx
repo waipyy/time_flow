@@ -16,7 +16,7 @@ import { SidebarContent } from '@/components/app/sidebar-content';
 export default function Home() {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-background">
+      <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar className="bg-sidebar" collapsible="icon">
           <SidebarHeader className="items-center justify-center p-4">
             <TimeFlowLogo className="size-8" />
