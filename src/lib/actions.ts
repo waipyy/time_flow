@@ -22,7 +22,7 @@ export async function addEvent(eventData: Omit<TimeEvent, 'id' | 'duration'>) {
       startTimeISO: startTime.toISOString(),
       endTimeISO: endTime.toISOString(),
     });
-    
+
     const newEventData = {
       ...eventData,
       duration,
@@ -32,7 +32,7 @@ export async function addEvent(eventData: Omit<TimeEvent, 'id' | 'duration'>) {
 
     console.log('[DEBUG-4 Server] Data being sent to Firestore:', newEventData);
     const ref = await db.collection('events').add(newEventData);
-    
+
     revalidateTag('events');
     revalidatePath('/');
     return { success: true, event: { ...newEventData, id: ref.id } };
@@ -59,14 +59,14 @@ export async function addEvents(eventsData: Omit<TimeEvent, 'id' | 'duration'>[]
         startTime,
         endTime,
       };
-      
+
       const ref = db.collection('events').doc();
       batch.set(ref, newEventData);
       events.push({ ...newEventData, id: ref.id });
     }
 
     await batch.commit();
-    
+
     revalidateTag('events');
     revalidatePath('/');
     return { success: true, events };
@@ -81,14 +81,14 @@ export async function updateEvent(eventId: string, eventData: Omit<TimeEvent, 'i
     const db = getDb();
     const startTime = typeof eventData.startTime === 'string' ? new Date(eventData.startTime) : eventData.startTime;
     const endTime = typeof eventData.endTime === 'string' ? new Date(eventData.endTime) : eventData.endTime;
-    
+
     const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
 
     const updatedEventData = {
-        ...eventData,
-        duration,
-        startTime,
-        endTime,
+      ...eventData,
+      duration,
+      startTime,
+      endTime,
     };
 
     await db.collection('events').doc(eventId).update(updatedEventData);
@@ -117,7 +117,7 @@ export async function deleteEvent(eventId: string) {
 
 const goalSchema = z.object({
   name: z.string().min(1, 'Goal name is required'),
-  eligibleTags: z.array(z.string()).min(1, 'At least one tag is required'),
+  eligibleTagIds: z.array(z.string()).min(1, 'At least one tag is required'),
   targetAmount: z.number().min(1, 'Target amount must be at least 1 hour'),
   timePeriod: z.enum(['daily', 'weekly', 'monthly']),
   comparison: z.enum(['at-least', 'no-more-than']),
@@ -164,8 +164,7 @@ export async function deleteGoal(goalId: string) {
     revalidatePath('/api/goals');
     revalidatePath('/');
     return { success: true };
-  } catch (error)
-{
+  } catch (error) {
     console.error("Error deleting goal:", error);
     return { success: false, error: "Failed to delete goal." };
   }
@@ -175,7 +174,7 @@ export async function parseEventWithAI(input: string, availableTagNames: string[
   if (!input) {
     return { success: false, error: 'Input cannot be empty.' };
   }
-  
+
   if (!parseNaturalLanguageInputPrompt) {
     return { success: false, error: 'AI prompt not found.' };
   }
@@ -188,9 +187,9 @@ export async function parseEventWithAI(input: string, availableTagNames: string[
       timeStyle: 'long',
       timeZone: timezone,
     }).format(now);
-    
-    const promptInput = { 
-      text: input, 
+
+    const promptInput = {
+      text: input,
       now: nowInUserTz, // Pass the formatted string
       availableTags: availableTagNames,
       timezone,
@@ -198,7 +197,7 @@ export async function parseEventWithAI(input: string, availableTagNames: string[
 
     // Get the rendered prompt to show the user
     const renderedPrompt = await parseNaturalLanguageInputPrompt.render(promptInput);
-    
+
     // Extract the full text from all message parts
     const promptText = renderedPrompt.messages
       .map(m => m.content.map(p => p.text || '').join(''))
@@ -207,8 +206,8 @@ export async function parseEventWithAI(input: string, availableTagNames: string[
     // Run the actual flow
     const result = await parseNaturalLanguageInput(promptInput);
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: result,
       debug: {
         prompt: promptText,
@@ -242,7 +241,7 @@ export async function addTag(tagData: Omit<Tag, 'id'>) {
     console.log('STEP 3 SUCCESS: Document added with ID:', ref.id);
 
     const newTag = { ...validatedData, id: ref.id };
-    
+
     console.log('STEP 4: Revalidating paths...');
     revalidatePath('/api/tags');
     revalidatePath('/');
@@ -286,11 +285,107 @@ export async function deleteTag(tagId: string) {
     const db = getDb();
     await db.collection('tags').doc(tagId).delete();
     revalidatePath('/api/tags');
-revalidatePath('/');
+    revalidatePath('/');
     return { success: true };
   } catch (error) {
     console.error("Error deleting tag:", error);
     return { success: false, error: "Failed to delete tag." };
+  }
+}
+
+// Migration: Convert goal eligibleTags (names) to eligibleTagIds (IDs)
+export async function migrateGoalsTagsToIds(allTags: Tag[]) {
+  try {
+    const db = getDb();
+    const snapshot = await db.collection('goals').get();
+
+    if (snapshot.empty) {
+      return { success: true, migratedCount: 0 };
+    }
+
+    const tagNameToId = new Map(allTags.map(t => [t.name, t.id]));
+    let migratedCount = 0;
+    const batch = db.batch();
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      // Skip if already migrated (has eligibleTagIds)
+      if (data.eligibleTagIds?.length > 0) continue;
+
+      // Get tag names from eligibleTags field
+      const tagNames: string[] = data.eligibleTags || [];
+      if (tagNames.length === 0) continue;
+
+      // Convert names to IDs
+      const tagIds = tagNames
+        .map(name => tagNameToId.get(name))
+        .filter((id): id is string => id !== undefined);
+
+      if (tagIds.length > 0) {
+        batch.update(doc.ref, { eligibleTagIds: tagIds });
+        migratedCount++;
+      }
+    }
+
+    if (migratedCount > 0) {
+      await batch.commit();
+      revalidatePath('/api/goals');
+      revalidatePath('/');
+    }
+
+    console.log(`Migrated ${migratedCount} goals from tag names to IDs`);
+    return { success: true, migratedCount };
+  } catch (error) {
+    console.error("Error migrating goals:", error);
+    return { success: false, error: "Failed to migrate goals." };
+  }
+}
+
+// Migration: Convert event tags (names) to tagIds (IDs)
+export async function migrateEventsTagsToIds(allTags: Tag[]) {
+  try {
+    const db = getDb();
+    const snapshot = await db.collection('events').get();
+
+    if (snapshot.empty) {
+      return { success: true, migratedCount: 0 };
+    }
+
+    const tagNameToId = new Map(allTags.map(t => [t.name, t.id]));
+    let migratedCount = 0;
+    const batch = db.batch();
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      // Skip if already migrated (has tagIds)
+      if (data.tagIds?.length > 0) continue;
+
+      // Get tag names from tags field
+      const tagNames: string[] = data.tags || [];
+      if (tagNames.length === 0) continue;
+
+      // Convert names to IDs
+      const tagIds = tagNames
+        .map(name => tagNameToId.get(name))
+        .filter((id): id is string => id !== undefined);
+
+      if (tagIds.length > 0) {
+        batch.update(doc.ref, { tagIds: tagIds });
+        migratedCount++;
+      }
+    }
+
+    if (migratedCount > 0) {
+      await batch.commit();
+      revalidateTag('events');
+      revalidatePath('/');
+    }
+
+    console.log(`Migrated ${migratedCount} events from tag names to IDs`);
+    return { success: true, migratedCount };
+  } catch (error) {
+    console.error("Error migrating events:", error);
+    return { success: false, error: "Failed to migrate events." };
   }
 }
 
@@ -309,16 +404,16 @@ export async function addTask(taskData: Omit<Task, 'id'>) {
   try {
     const validatedData = taskSchema.parse(taskData);
     const db = getDb();
-    
+
     // Ensure dates are Firestore compatible
     const finalData = {
-        ...validatedData,
-        deadline: validatedData.deadline || null, // Firestore doesn't like undefined
-        createdAt: validatedData.createdAt || new Date(),
+      ...validatedData,
+      deadline: validatedData.deadline || null, // Firestore doesn't like undefined
+      createdAt: validatedData.createdAt || new Date(),
     };
 
     const ref = await db.collection('tasks').add(finalData);
-    
+
     revalidateTag('tasks');
     revalidatePath('/');
     return { success: true, task: { ...finalData, id: ref.id } };
@@ -334,13 +429,13 @@ export async function addTask(taskData: Omit<Task, 'id'>) {
 export async function updateTask(taskId: string, taskData: Partial<Task>) {
   try {
     const db = getDb();
-    
+
     // We partial parse because we might only be updating status
     const validatedData = taskSchema.partial().parse(taskData);
-    
+
     // Ensure dates are Firestore compatible
     const finalData = {
-        ...validatedData,
+      ...validatedData,
     };
     if (finalData.deadline === undefined) delete finalData.deadline;
 
@@ -351,7 +446,7 @@ export async function updateTask(taskId: string, taskData: Partial<Task>) {
     return { success: true, task: { ...taskData, id: taskId } };
   } catch (error) {
     console.error("Error updating task:", error);
-     if (error instanceof z.ZodError) {
+    if (error instanceof z.ZodError) {
       return { success: false, error: error.errors.map(e => e.message).join(', ') };
     }
     return { success: false, error: "Failed to update task." };

@@ -45,12 +45,12 @@ const eventFormSchema = z.object({
     message: 'Title must be at least 2 characters.',
   }),
   description: z.string().optional(),
-  tags: z.array(z.string()).min(1, 'At least one tag is required.'),
+  tagIds: z.array(z.string()).min(1, 'At least one tag is required.'),
   startTime: z.date(),
   endTime: z.date(),
 }).refine(data => data.endTime > data.startTime, {
-    message: 'End time must be after start time.',
-    path: ['endTime'],
+  message: 'End time must be after start time.',
+  path: ['endTime'],
 });
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
@@ -71,13 +71,19 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
   const [isTagsPopoverOpen, setIsTagsPopoverOpen] = useState(false);
   const router = useRouter();
   const { mutateEvents } = useEvents();
-  
+
+  // Helper: convert tag names to IDs (for backward compat when editing old events)
+  const tagNamesToIds = (names: string[]): string[] => {
+    if (!availableTags) return [];
+    return names.map(name => availableTags.find(t => t.name === name)?.id).filter((id): id is string => !!id);
+  };
+
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
       title: '',
       description: '',
-      tags: [],
+      tagIds: [],
       startTime: new Date(),
       endTime: new Date(Date.now() + 60 * 60 * 1000),
     },
@@ -85,10 +91,14 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
 
   useEffect(() => {
     if (eventToEdit) {
+      // Use tagIds if available, otherwise convert tags (names) to IDs
+      const tagIds = eventToEdit.tagIds?.length
+        ? eventToEdit.tagIds
+        : tagNamesToIds(eventToEdit.tags || []);
       form.reset({
         title: eventToEdit.title || '',
         description: eventToEdit.description || '',
-        tags: eventToEdit.tags || [],
+        tagIds: tagIds,
         startTime: eventToEdit.startTime ? new Date(eventToEdit.startTime) : new Date(),
         endTime: eventToEdit.endTime ? new Date(eventToEdit.endTime) : new Date(Date.now() + 60 * 60 * 1000),
       });
@@ -96,11 +106,12 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
       form.reset({
         title: '',
         description: '',
-        tags: [],
+        tagIds: [],
         startTime: new Date(),
         endTime: new Date(Date.now() + 60 * 60 * 1000),
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventToEdit, form, isOpen]);
 
   const handleClose = (success: boolean) => {
@@ -142,7 +153,7 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
         throw new Error(result.error || 'Something went wrong.');
       }
     } catch (error) {
-       toast({
+      toast({
         variant: 'destructive',
         title: 'Error',
         description: error instanceof Error ? error.message : 'Could not save event.',
@@ -156,34 +167,32 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
     if (!eventToEdit?.id) return;
     setIsLoading(true);
     try {
-        const result = await deleteEvent(eventToEdit.id!);
-        if (result.success) {
-            await mutateEvents(); // Re-fetch events
-            toast({
-                title: 'Event deleted',
-                description: `The event has been removed.`,
-            });
-            handleClose(true);
-        } else {
-            throw new Error(result.error || 'Could not delete the event.');
-        }
-    } catch (error)
-{
+      const result = await deleteEvent(eventToEdit.id!);
+      if (result.success) {
+        await mutateEvents(); // Re-fetch events
         toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: error instanceof Error ? error.message : 'Could not delete event.',
+          title: 'Event deleted',
+          description: `The event has been removed.`,
         });
+        handleClose(true);
+      } else {
+        throw new Error(result.error || 'Could not delete the event.');
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Could not delete event.',
+      });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
-  
-  const getTagColor = (tagName: string) => {
-    if (!availableTags) return '#cccccc';
-    const tag = availableTags.find(t => t.name === tagName);
-    return tag ? tag.color : '#cccccc';
-  }
+
+  // Get tag details by ID
+  const getTagById = (tagId: string) => availableTags?.find(t => t.id === tagId);
+  const getTagColor = (tagId: string) => getTagById(tagId)?.color || '#cccccc';
+  const getTagName = (tagId: string) => getTagById(tagId)?.name || 'Unknown';
 
   const formContent = (
     <Form {...form}>
@@ -216,7 +225,7 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
         />
         <FormField
           control={form.control}
-          name="tags"
+          name="tagIds"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tags</FormLabel>
@@ -229,9 +238,9 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
                     className="w-full justify-between"
                   >
                     <div className="flex gap-1 flex-wrap">
-                      {field.value.length > 0 ? field.value.map(tag => (
-                        <Badge key={tag} style={{ backgroundColor: getTagColor(tag) }}>
-                          {tag}
+                      {field.value.length > 0 ? field.value.map((tagId: string) => (
+                        <Badge key={tagId} style={{ backgroundColor: getTagColor(tagId) }}>
+                          {getTagName(tagId)}
                         </Badge>
                       )) : "Select tags..."}
                     </div>
@@ -247,18 +256,18 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
                             <CommandItem
                               key={tag.id}
                               value={tag.name}
-                              onSelect={(currentValue) => {
-                                const currentTags = field.value || [];
-                                const newTags = currentTags.includes(currentValue)
-                                  ? currentTags.filter((t) => t !== currentValue)
-                                  : [...currentTags, currentValue];
-                                field.onChange(newTags);
+                              onSelect={() => {
+                                const currentTagIds = field.value || [];
+                                const newTagIds = currentTagIds.includes(tag.id)
+                                  ? currentTagIds.filter((t: string) => t !== tag.id)
+                                  : [...currentTagIds, tag.id];
+                                field.onChange(newTagIds);
                               }}
                             >
                               <Check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  (field.value || []).includes(tag.name) ? "opacity-100" : "opacity-0"
+                                  (field.value || []).includes(tag.id) ? "opacity-100" : "opacity-0"
                                 )}
                               />
                               {tag.name}
@@ -357,7 +366,7 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button type="button" variant="destructive" className='mr-auto' disabled={isLoading}>
-                  <Trash2 className="mr-2 h-4 w-4"/>
+                  <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </Button>
               </AlertDialogTrigger>
@@ -391,7 +400,7 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
   if (className) {
     return <div className={className}>{formContent}</div>;
   }
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">

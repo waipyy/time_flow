@@ -26,9 +26,15 @@ interface TagsTableProps {
 }
 
 export function TagsTable({ tags, goals }: TagsTableProps) {
-  const getGoalsForTag = (tagName: string) => {
+  const getGoalsForTag = (tagId: string, tagName: string) => {
     return goals
-      .filter((goal) => goal.eligibleTags.includes(tagName))
+      .filter((goal) => {
+        // Match by ID first (preferred)
+        if (goal.eligibleTagIds?.includes(tagId)) return true;
+        // Fallback to name for backward compat
+        if (goal.eligibleTags?.includes(tagName)) return true;
+        return false;
+      })
       .map((goal) => goal.name)
       .join(', ');
   };
@@ -66,7 +72,7 @@ export function TagsTable({ tags, goals }: TagsTableProps) {
                 </div>
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {getGoalsForTag(tag.name) || '-'}
+                {getGoalsForTag(tag.id, tag.name) || '-'}
               </TableCell>
               <TableCell>
                 <DropdownMenu>

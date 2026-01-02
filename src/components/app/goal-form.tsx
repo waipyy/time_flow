@@ -28,12 +28,12 @@ import { addGoal, updateGoal } from '@/lib/actions';
 import { Loader2, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-  } from "@/components/ui/select"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { cn } from '@/lib/utils';
@@ -44,7 +44,7 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 const goalFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
-  eligibleTags: z.array(z.string()).min(1, 'At least one tag is required.'),
+  eligibleTagIds: z.array(z.string()).min(1, 'At least one tag is required.'),
   targetAmount: z.coerce.number().min(1, 'Target must be at least 1 hour.'),
   timePeriod: z.enum(['daily', 'weekly', 'monthly']),
   comparison: z.enum(['at-least', 'no-more-than']),
@@ -64,11 +64,17 @@ export function GoalForm({ goalToEdit, children, availableTags }: GoalFormProps)
   const [isLoading, setIsLoading] = useState(false);
   const [isTagsPopoverOpen, setIsTagsPopoverOpen] = useState(false);
 
+  // Helper: convert tag names to IDs (for backward compat when editing old goals)
+  const tagNamesToIds = (names: string[]): string[] => {
+    if (!availableTags) return [];
+    return names.map(name => availableTags.find(t => t.name === name)?.id).filter((id): id is string => !!id);
+  };
+
   const form = useForm<GoalFormValues>({
     resolver: zodResolver(goalFormSchema),
     defaultValues: {
       name: '',
-      eligibleTags: [],
+      eligibleTagIds: [],
       targetAmount: 10,
       timePeriod: 'weekly',
       comparison: 'at-least',
@@ -78,30 +84,35 @@ export function GoalForm({ goalToEdit, children, availableTags }: GoalFormProps)
   useEffect(() => {
     if (isOpen) {
       if (goalToEdit) {
+        // Use eligibleTagIds if available, otherwise convert eligibleTags (names) to IDs
+        const tagIds = goalToEdit.eligibleTagIds?.length
+          ? goalToEdit.eligibleTagIds
+          : tagNamesToIds(goalToEdit.eligibleTags || []);
         form.reset({
-            name: goalToEdit.name || '',
-            eligibleTags: goalToEdit.eligibleTags || [],
-            targetAmount: goalToEdit.targetAmount || 10,
-            timePeriod: goalToEdit.timePeriod || 'weekly',
-            comparison: goalToEdit.comparison || 'at-least',
+          name: goalToEdit.name || '',
+          eligibleTagIds: tagIds,
+          targetAmount: goalToEdit.targetAmount || 10,
+          timePeriod: goalToEdit.timePeriod || 'weekly',
+          comparison: goalToEdit.comparison || 'at-least',
         })
       } else {
         form.reset({
-            name: '',
-            eligibleTags: [],
-            targetAmount: 10,
-            timePeriod: 'weekly',
-            comparison: 'at-least',
+          name: '',
+          eligibleTagIds: [],
+          targetAmount: 10,
+          timePeriod: 'weekly',
+          comparison: 'at-least',
         })
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, goalToEdit, form]);
 
   const handleOpenChange = (open: boolean) => {
     if (isLoading) return;
     setIsOpen(open);
   };
-  
+
   const onSubmit = async (data: GoalFormValues) => {
     setIsLoading(true);
     try {
@@ -128,12 +139,11 @@ export function GoalForm({ goalToEdit, children, availableTags }: GoalFormProps)
       setIsLoading(false);
     }
   };
-  
-  const getTagColor = (tagName: string) => {
-    if (!availableTags) return '#cccccc';
-    const tag = availableTags.find(t => t.name === tagName);
-    return tag ? tag.color : '#cccccc';
-  }
+
+  // Get tag details by ID
+  const getTagById = (tagId: string) => availableTags?.find(t => t.id === tagId);
+  const getTagColor = (tagId: string) => getTagById(tagId)?.color || '#cccccc';
+  const getTagName = (tagId: string) => getTagById(tagId)?.name || 'Unknown';
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -160,7 +170,7 @@ export function GoalForm({ goalToEdit, children, availableTags }: GoalFormProps)
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="comparison"
               render={({ field }) => (
@@ -208,7 +218,7 @@ export function GoalForm({ goalToEdit, children, availableTags }: GoalFormProps)
                   </FormItem>
                 )}
               />
-               <FormField
+              <FormField
                 control={form.control}
                 name="timePeriod"
                 render={({ field }) => (
@@ -233,7 +243,7 @@ export function GoalForm({ goalToEdit, children, availableTags }: GoalFormProps)
             </div>
             <FormField
               control={form.control}
-              name="eligibleTags"
+              name="eligibleTagIds"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Eligible Tags</FormLabel>
@@ -245,10 +255,10 @@ export function GoalForm({ goalToEdit, children, availableTags }: GoalFormProps)
                         aria-expanded={isTagsPopoverOpen}
                         className="w-full justify-between"
                       >
-                         <div className="flex gap-1 flex-wrap">
-                          {field.value.length > 0 ? field.value.map(tag => (
-                            <Badge key={tag} style={{ backgroundColor: getTagColor(tag)}}>
-                                {tag}
+                        <div className="flex gap-1 flex-wrap">
+                          {field.value.length > 0 ? field.value.map((tagId: string) => (
+                            <Badge key={tagId} style={{ backgroundColor: getTagColor(tagId) }}>
+                              {getTagName(tagId)}
                             </Badge>
                           )) : "Select tags..."}
                         </div>
@@ -265,18 +275,18 @@ export function GoalForm({ goalToEdit, children, availableTags }: GoalFormProps)
                                 <CommandItem
                                   key={tag.id}
                                   value={tag.name}
-                                  onSelect={(currentValue) => {
-                                    const currentTags = field.value || [];
-                                    const newTags = currentTags.includes(currentValue)
-                                      ? currentTags.filter((t) => t !== currentValue)
-                                      : [...currentTags, currentValue];
-                                    field.onChange(newTags);
+                                  onSelect={() => {
+                                    const currentTagIds = field.value || [];
+                                    const newTagIds = currentTagIds.includes(tag.id)
+                                      ? currentTagIds.filter((t: string) => t !== tag.id)
+                                      : [...currentTagIds, tag.id];
+                                    field.onChange(newTagIds);
                                   }}
                                 >
                                   <Check
                                     className={cn(
                                       "mr-2 h-4 w-4",
-                                      (field.value || []).includes(tag.name) ? "opacity-100" : "opacity-0"
+                                      (field.value || []).includes(tag.id) ? "opacity-100" : "opacity-0"
                                     )}
                                   />
                                   {tag.name}
@@ -292,7 +302,7 @@ export function GoalForm({ goalToEdit, children, availableTags }: GoalFormProps)
                 </FormItem>
               )}
             />
-           
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={isLoading}>
                 Cancel

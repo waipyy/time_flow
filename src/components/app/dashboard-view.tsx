@@ -31,7 +31,7 @@ function DashboardSkeleton() {
           <Skeleton className="h-[400px] rounded-lg" />
         </div>
         <div className="col-span-12 lg:col-span-1 space-y-4">
-        <Skeleton className="h-[400px] rounded-lg" />
+          <Skeleton className="h-[400px] rounded-lg" />
         </div>
       </div>
     </div>
@@ -66,14 +66,30 @@ export function DashboardView({ events, goals, tags }: DashboardViewProps) {
     const { start, end } = getTimePeriodDateRange(goal.timePeriod);
     const relevantEvents = events.filter(event => {
       const eventTime = new Date(event.startTime).getTime();
-      return (
-        eventTime >= start.getTime() &&
-        eventTime <= end.getTime() &&
-        goal.eligibleTags.some(tag => event.tags.includes(tag))
-      );
+      if (eventTime < start.getTime() || eventTime > end.getTime()) return false;
+
+      // Get goal's tag IDs (prefer eligibleTagIds, fallback to eligibleTags for backward compat)
+      const goalTagIds = goal.eligibleTagIds || [];
+      const goalTagNames = goal.eligibleTags || [];
+
+      // Get event's tag IDs (prefer tagIds, fallback to tags for backward compat)
+      const eventTagIds = event.tagIds || [];
+      const eventTagNames = event.tags || [];
+
+      // Match by IDs first
+      if (goalTagIds.length > 0 && eventTagIds.length > 0) {
+        return goalTagIds.some(tagId => eventTagIds.includes(tagId));
+      }
+
+      // Fallback: match by names (for non-migrated data)
+      if (goalTagNames.length > 0 && eventTagNames.length > 0) {
+        return goalTagNames.some(tagName => eventTagNames.includes(tagName));
+      }
+
+      return false;
     });
     const totalHours = relevantEvents.reduce((acc, event) => acc + event.duration, 0) / 60;
-    
+
     if (goal.comparison === 'at-least') {
       return totalHours >= goal.targetAmount;
     }

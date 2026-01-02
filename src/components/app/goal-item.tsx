@@ -10,7 +10,7 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu"
 import { GoalForm } from "./goal-form";
 import { deleteGoal } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
@@ -24,12 +24,12 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-  } from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog"
 import { useTransition } from "react";
 import { mutate } from "swr";
 import { useTags } from "@/hooks/use-tags";
 import { Badge } from "../ui/badge";
-  
+
 
 interface GoalItemProps {
     goal: Goal;
@@ -59,12 +59,23 @@ export function GoalItem({ goal, events }: GoalItemProps) {
             }
         });
     }
-    
-    const getTagColor = (tagName: string) => {
+
+    const getTagColor = (tagId: string) => {
         if (!tags) return '#cccccc';
-        const tag = tags.find(t => t.name === tagName);
+        const tag = tags.find(t => t.id === tagId);
         return tag ? tag.color : '#cccccc';
     }
+
+    const getTagName = (tagId: string) => {
+        if (!tags) return tagId;
+        const tag = tags.find(t => t.id === tagId);
+        return tag ? tag.name : tagId;
+    }
+
+    // Get tag IDs (prefer eligibleTagIds, fallback to eligibleTags for backward compat)
+    const tagIds = goal.eligibleTagIds?.length
+        ? goal.eligibleTagIds
+        : (goal.eligibleTags || []);
 
     return (
         <Card>
@@ -85,27 +96,27 @@ export function GoalItem({ goal, events }: GoalItemProps) {
                         <DropdownMenuContent align="end">
                             <GoalForm goalToEdit={goal} availableTags={tags || []}>
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                    <Pencil className="mr-2 h-4 w-4"/>
+                                    <Pencil className="mr-2 h-4 w-4" />
                                     Edit
                                 </DropdownMenuItem>
                             </GoalForm>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4"/>
+                                        <Trash2 className="mr-2 h-4 w-4" />
                                         Delete
                                     </DropdownMenuItem>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete your goal.
-                                    </AlertDialogDescription>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete your goal.
+                                        </AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
@@ -117,10 +128,10 @@ export function GoalItem({ goal, events }: GoalItemProps) {
                 <GoalProgressCard goal={goal} events={events} />
             </CardContent>
             <CardFooter>
-                 <div className="flex flex-wrap gap-1">
-                    {goal.eligibleTags.map(tag => (
-                        <Badge key={tag} className="text-xs" style={{ backgroundColor: getTagColor(tag)}}>
-                            {tag}
+                <div className="flex flex-wrap gap-1">
+                    {tagIds.map(tagId => (
+                        <Badge key={tagId} className="text-xs" style={{ backgroundColor: getTagColor(tagId) }}>
+                            {getTagName(tagId)}
                         </Badge>
                     ))}
                 </div>

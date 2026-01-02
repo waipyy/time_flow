@@ -12,11 +12,13 @@ import { useTags } from '@/hooks/use-tags';
 import { Skeleton } from '../ui/skeleton';
 import { AppHeader } from './app-header';
 import { cn } from '@/lib/utils';
+import { useEffect, useRef } from 'react';
+import { migrateGoalsTagsToIds, migrateEventsTagsToIds } from '@/lib/actions';
 
 function FullPageSkeleton() {
   return (
     <main className="flex-1 p-4 sm:p-6 lg:p-8">
-       <div className="space-y-8">
+      <div className="space-y-8">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Skeleton className="h-28 rounded-lg" />
           <Skeleton className="h-28 rounded-lg" />
@@ -40,11 +42,38 @@ export function MainContent() {
   const searchParams = useSearchParams();
   const currentView = searchParams.get('view') || 'dashboard';
 
-  const { events, isLoading: isLoadingEvents } = useEvents();
-  const { goals, isLoading: isLoadingGoals } = useGoals();
+  const { events, isLoading: isLoadingEvents, mutateEvents } = useEvents();
+  const { goals, isLoading: isLoadingGoals, mutate: mutateGoals } = useGoals();
   const { tags, isLoading: isLoadingTags } = useTags();
 
   const isLoading = isLoadingEvents || isLoadingGoals || isLoadingTags;
+  const migrationRanRef = useRef(false);
+
+  // Run migration once when all data is loaded
+  useEffect(() => {
+    if (isLoading || migrationRanRef.current) return;
+    if (!tags?.length) return;
+
+    migrationRanRef.current = true;
+
+    // Run migrations in background
+    (async () => {
+      const [goalsResult, eventsResult] = await Promise.all([
+        migrateGoalsTagsToIds(tags),
+        migrateEventsTagsToIds(tags),
+      ]);
+
+      // Refresh data if any migrations occurred
+      if (goalsResult.success && (goalsResult.migratedCount ?? 0) > 0) {
+        console.log(`[Migration] Migrated ${goalsResult.migratedCount} goals`);
+        mutateGoals();
+      }
+      if (eventsResult.success && (eventsResult.migratedCount ?? 0) > 0) {
+        console.log(`[Migration] Migrated ${eventsResult.migratedCount} events`);
+        mutateEvents();
+      }
+    })();
+  }, [isLoading, tags, mutateGoals, mutateEvents]);
 
   const mainContentClass = cn(
     "flex-1",

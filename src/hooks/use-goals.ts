@@ -7,7 +7,7 @@ import type { Goal } from '@/lib/types';
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function useGoals() {
-  const { data, error, isLoading } = useSWR<Goal[]>('/api/goals', fetcher, {
+  const { data, error, isLoading, mutate } = useSWR<Goal[]>('/api/goals', fetcher, {
     revalidateOnFocus: false,
   });
 
@@ -15,5 +15,6 @@ export function useGoals() {
     goals: data,
     isLoading,
     isError: error,
+    mutate,
   };
 }

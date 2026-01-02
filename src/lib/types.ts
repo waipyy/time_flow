@@ -7,10 +7,12 @@ export interface Tag {
 export interface TimeEvent {
   id: string;
   title: string;
+  description?: string;
   startTime: Date;
   endTime: Date;
   duration: number; // Duration in minutes
-  tags?: string[]; // Array of tag names
+  tags?: string[]; // DEPRECATED: Array of tag names (for backward compat)
+  tagIds?: string[]; // Array of tag IDs (preferred)
 }
 
 export interface Task {
@@ -24,8 +26,14 @@ export interface Task {
 
 export interface Goal {
   id: string;
-  title: string;
-  frequency: 'daily' | 'weekly' | 'monthly';
-  targetHours: number;
-  tags: string[]; // Array of tag names
+  name?: string; // Goal name
+  title?: string; // Legacy field
+  frequency?: 'daily' | 'weekly' | 'monthly';
+  timePeriod?: 'daily' | 'weekly' | 'monthly';
+  targetHours?: number;
+  targetAmount?: number;
+  comparison?: 'at-least' | 'no-more-than';
+  eligibleTags?: string[]; // DEPRECATED: Array of tag names (for backward compat)
+  eligibleTagIds?: string[]; // Array of tag IDs (preferred)
+  tags?: string[]; // Legacy field
 }
