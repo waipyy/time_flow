@@ -124,7 +124,7 @@ export function GoalItem({ goal, events }: GoalItemProps) {
             </CardContent>
             <CardFooter>
                 <div className="flex flex-wrap gap-1">
-                    {goal.eligibleTagIds.map((tagId: string) => (
+                    {goal.eligibleTagIds?.map((tagId: string) => (
                         <Badge key={tagId} className="text-xs" style={{ backgroundColor: getTagColor(tagId) }}>
                             {getTagName(tagId)}
                         </Badge>

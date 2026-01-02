@@ -28,7 +28,7 @@ interface TagsTableProps {
 export function TagsTable({ tags, goals }: TagsTableProps) {
   const getGoalsForTag = (tagId: string) => {
     return goals
-      .filter((goal) => goal.eligibleTagIds.includes(tagId))
+      .filter((goal) => goal.eligibleTagIds?.includes(tagId))
       .map((goal) => goal.name)
       .join(', ');
   };

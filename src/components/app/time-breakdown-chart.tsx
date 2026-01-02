@@ -47,7 +47,7 @@ export function TimeBreakdownChart({ events: rawEvents, allTags }: TimeBreakdown
     );
 
     recentEvents.forEach(event => {
-      event.tagIds.forEach((tagId: string) => {
+      event.tagIds?.forEach((tagId: string) => {
         if (!tagDurations[tagId]) {
           tagDurations[tagId] = 0;
         }

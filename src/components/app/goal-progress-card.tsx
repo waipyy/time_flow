@@ -14,7 +14,7 @@ export function GoalProgressCard({ goal, events }: GoalProgressCardProps) {
   const relevantEvents = events.filter(event => {
     const eventTime = (typeof event.startTime === 'string' ? new Date(event.startTime) : event.startTime).getTime();
     if (eventTime < start.getTime() || eventTime > end.getTime()) return false;
-    return goal.eligibleTagIds.some(tagId => event.tagIds.includes(tagId));
+    return goal.eligibleTagIds?.some(tagId => event.tagIds?.includes(tagId)) ?? false;
   });
 
   const totalMinutes = relevantEvents.reduce(

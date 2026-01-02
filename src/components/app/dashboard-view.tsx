@@ -67,7 +67,7 @@ export function DashboardView({ events, goals, tags }: DashboardViewProps) {
     const relevantEvents = events.filter(event => {
       const eventTime = new Date(event.startTime).getTime();
       if (eventTime < start.getTime() || eventTime > end.getTime()) return false;
-      return goal.eligibleTagIds.some(tagId => event.tagIds.includes(tagId));
+      return goal.eligibleTagIds?.some(tagId => event.tagIds?.includes(tagId)) ?? false;
     });
     const totalHours = relevantEvents.reduce((acc, event) => acc + event.duration, 0) / 60;
 
