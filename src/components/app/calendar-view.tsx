@@ -46,12 +46,12 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
   const events = useMemo(() => {
     if (!rawEvents) return [];
     const parsedEvents = rawEvents.map(e => ({
-    ...e,
-    startTime: parseDate(e.startTime),
-    endTime: parseDate(e.endTime),
-  }));
-  return parsedEvents;
-}, [rawEvents]);
+      ...e,
+      startTime: parseDate(e.startTime),
+      endTime: parseDate(e.endTime),
+    }));
+    return parsedEvents;
+  }, [rawEvents]);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [editingEvent, setEditingEvent] = useState<TimeEvent | undefined>(
@@ -64,7 +64,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
   const week = useMemo(() => {
     // Convert currentDate (local Date) to a Date object that, when interpreted locally, represents the same instant in TIMEZONE.
     const zonedCurrentDate = toZonedTime(currentDate, TIMEZONE);
-    
+
     // Calculate start/end of week based on this zoned date, which will give us Dates corresponding to the week in TIMEZONE.
     const startOfTargetWeek = startOfWeek(zonedCurrentDate, { weekStartsOn: 1 });
     const endOfTargetWeek = endOfWeek(zonedCurrentDate, { weekStartsOn: 1 });
@@ -94,7 +94,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
   const getTimeFromMouseEvent = (day: Date, e: MouseEvent<HTMLDivElement>): Date => {
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetY = e.clientY - rect.top;
-    
+
     // The container's total height is 24 hours * 4rem/hour = 96rem
     // We can calculate the fraction of the day that has passed based on the click position
     const totalHours = (offsetY / rect.height) * 24;
@@ -110,23 +110,23 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
     const startDate = getTimeFromMouseEvent(day, e);
     setDragStartDate(startDate);
     setDraggingEvent({
-        startTime: startDate,
-        endTime: startDate,
-        title: 'New Event',
-        tags: [''], // Placeholder for styling
+      startTime: startDate,
+      endTime: startDate,
+      title: 'New Event',
+      tagIds: [], // Empty for new event
     });
   };
-  
+
   const handleMouseMove = (day: Date, e: MouseEvent<HTMLDivElement>) => {
     if (!dragStartDate) return;
-  
+
     let startDate = dragStartDate;
     let endDate = getTimeFromMouseEvent(day, e);
-  
+
     if (endDate < startDate) {
       [startDate, endDate] = [endDate, startDate];
     }
-  
+
     setDraggingEvent(prev => ({
       ...prev,
       startTime: startDate,
@@ -168,62 +168,62 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
         const eventEndZoned = toZonedTime(event.endTime, TIMEZONE);
 
         return isWithinInterval(eventStartZoned, { start: dayStart, end: dayEnd }) ||
-               isWithinInterval(eventEndZoned, { start: dayStart, end: dayEnd }) ||
-               (eventStartZoned < dayStart && eventEndZoned > dayEnd);
+          isWithinInterval(eventEndZoned, { start: dayStart, end: dayEnd }) ||
+          (eventStartZoned < dayStart && eventEndZoned > dayEnd);
       })
       .sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
 
     if (eventsForDay.length === 0) {
-        return [];
+      return [];
     }
-    
+
     let eventGroups: EventWithPosition[][] = [];
     let currentGroup: EventWithPosition[] = [eventsForDay[0]];
-    
-    for (let i = 1; i < eventsForDay.length; i++) {
-        const currentEvent = eventsForDay[i];
-        const lastEventInGroup = currentGroup[currentGroup.length - 1];
 
-        if (currentEvent.startTime < lastEventInGroup.endTime) {
-            currentGroup.push(currentEvent);
-        } else {
-            eventGroups.push(currentGroup);
-            currentGroup = [currentEvent];
-        }
+    for (let i = 1; i < eventsForDay.length; i++) {
+      const currentEvent = eventsForDay[i];
+      const lastEventInGroup = currentGroup[currentGroup.length - 1];
+
+      if (currentEvent.startTime < lastEventInGroup.endTime) {
+        currentGroup.push(currentEvent);
+      } else {
+        eventGroups.push(currentGroup);
+        currentGroup = [currentEvent];
+      }
     }
     eventGroups.push(currentGroup);
 
     const positionedEvents: EventWithPosition[] = [];
     for (const group of eventGroups) {
-        const columns: EventWithPosition[][] = [];
-        for (const event of group) {
-            let placed = false;
-            for (let i = 0; i < columns.length; i++) {
-                const column = columns[i];
-                const lastEventInColumn = column[column.length - 1];
-                if (event.startTime >= lastEventInColumn.endTime) {
-                    column.push(event);
-                    event.column = i;
-                    placed = true;
-                    break;
-                }
-            }
-
-            if (!placed) {
-                event.column = columns.length;
-                columns.push([event]);
-            }
+      const columns: EventWithPosition[][] = [];
+      for (const event of group) {
+        let placed = false;
+        for (let i = 0; i < columns.length; i++) {
+          const column = columns[i];
+          const lastEventInColumn = column[column.length - 1];
+          if (event.startTime >= lastEventInColumn.endTime) {
+            column.push(event);
+            event.column = i;
+            placed = true;
+            break;
+          }
         }
 
-        const totalColumns = columns.length;
-        for (const event of group) {
-            event.totalColumns = totalColumns;
-            positionedEvents.push(event);
+        if (!placed) {
+          event.column = columns.length;
+          columns.push([event]);
         }
+      }
+
+      const totalColumns = columns.length;
+      for (const event of group) {
+        event.totalColumns = totalColumns;
+        positionedEvents.push(event);
+      }
     }
 
     return positionedEvents;
-};
+  };
   const getEventStyle = (event: EventWithPosition, currentDay: Date) => {
     const startOfCurrentDay = startOfDay(toZonedTime(currentDay, TIMEZONE));
     const endOfCurrentDay = endOfDay(toZonedTime(currentDay, TIMEZONE));
@@ -263,14 +263,14 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
     };
   };
 
-  const getTagColor = (tagName: string) => {
-    if (!tags || !tagName) return '#cccccc';
-    const tag = tags.find((t) => t.name === tagName);
+  const getTagColor = (tagId: string) => {
+    if (!tags || !tagId) return '#cccccc';
+    const tag = tags.find((t) => t.id === tagId);
     return tag ? tag.color : '#cccccc';
   };
-  
+
   if (!rawEvents || !tags) {
-    return <div className="h-full flex flex-col p-4"><Skeleton className="w-full h-full"/></div>
+    return <div className="h-full flex flex-col p-4"><Skeleton className="w-full h-full" /></div>
   }
 
   return (
@@ -296,22 +296,22 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
           <div className="w-20 border-r text-sm shrink-0">
             {/* Spacer to align with the sticky day headers */}
             <div className="sticky top-0 bg-background z-10 text-center p-2 border-b">
-                <p className="text-sm font-medium invisible">Mon</p>
-                <p className="text-2xl font-semibold invisible">8</p>
+              <p className="text-sm font-medium invisible">Mon</p>
+              <p className="text-2xl font-semibold invisible">8</p>
             </div>
             <div className="relative">
-                {hours.map((hour) => {
-                  const dateForLabel = set(toZonedTime(new Date(), TIMEZONE), { hours: hour, minutes: 0 });
-                  const formattedLabel = formatInTimeZone(dateForLabel, TIMEZONE, 'p');
-                  return (
-                    <div
-                      key={hour}
-                      className="h-16 text-right pr-2 text-xs text-muted-foreground border-t flex items-center"
-                    >
-                      {formattedLabel}
-                    </div>
-                  );
-                })}
+              {hours.map((hour) => {
+                const dateForLabel = set(toZonedTime(new Date(), TIMEZONE), { hours: hour, minutes: 0 });
+                const formattedLabel = formatInTimeZone(dateForLabel, TIMEZONE, 'p');
+                return (
+                  <div
+                    key={hour}
+                    className="h-16 text-right pr-2 text-xs text-muted-foreground border-t flex items-center"
+                  >
+                    {formattedLabel}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -320,33 +320,33 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
             {week.map((day) => {
               const eventsWithPosition = getEventsWithOverlapData(day, displayedEvents as EventWithPosition[]);
               return (
-              <div key={day.toString()} className="relative border-l">
-                <div className="sticky top-0 bg-background z-10 text-center p-2 border-b">
-                  <p className="text-sm font-medium">{formatInTimeZone(day, TIMEZONE, 'EEE')}</p>
-                  <p className="text-2xl font-semibold">{formatInTimeZone(day, TIMEZONE, 'd')}</p>
-                </div>
-                <div 
-                  className="relative h-[96rem]" // Explicit height for event positioning
-                  onMouseDown={(e) => handleMouseDown(day, e)}
-                  onMouseMove={(e) => handleMouseMove(day, e)}
-                  onMouseUp={handleMouseUp}
-                >
-                  {/* Hour lines */}
-                  {hours.map((hour) => (
-                    <div 
-                      key={hour} 
-                      className="h-16 border-t"
-                      style={{ pointerEvents: 'none' }} // Disable pointer events on individual slots
-                    ></div>
-                  ))}
-                  {/* Events */}
-                  {eventsWithPosition.map((event) => (
+                <div key={day.toString()} className="relative border-l">
+                  <div className="sticky top-0 bg-background z-10 text-center p-2 border-b">
+                    <p className="text-sm font-medium">{formatInTimeZone(day, TIMEZONE, 'EEE')}</p>
+                    <p className="text-2xl font-semibold">{formatInTimeZone(day, TIMEZONE, 'd')}</p>
+                  </div>
+                  <div
+                    className="relative h-[96rem]" // Explicit height for event positioning
+                    onMouseDown={(e) => handleMouseDown(day, e)}
+                    onMouseMove={(e) => handleMouseMove(day, e)}
+                    onMouseUp={handleMouseUp}
+                  >
+                    {/* Hour lines */}
+                    {hours.map((hour) => (
+                      <div
+                        key={hour}
+                        className="h-16 border-t"
+                        style={{ pointerEvents: 'none' }} // Disable pointer events on individual slots
+                      ></div>
+                    ))}
+                    {/* Events */}
+                    {eventsWithPosition.map((event) => (
                       <div
                         key={event.id || 'placeholder-event'}
                         className="absolute p-1 rounded text-white text-xs cursor-pointer z-20 flex items-center justify-center overflow-hidden" // Added overflow-hidden
                         style={{
                           ...getEventStyle(event, day),
-                          backgroundColor: getTagColor(event.tags?.[0]),
+                          backgroundColor: getTagColor(event.tagIds?.[0]),
                         }}
                         onClick={() => setEditingEvent(event)}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -356,10 +356,10 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
                         </p>
                       </div>
                     ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
           </div>
         </div>
       </div>

@@ -33,6 +33,15 @@ import { AiDebugView } from './ai-debug-view';
 import { EventAccordionItem } from './event-accordion-item';
 import { EventForm } from './event-form';
 
+// Internal type for events before we know the tag IDs (AI returns tag names)
+interface ParsedEventFromAI {
+  title: string;
+  tags: string[];  // AI returns tag names
+  startTime: string;
+  endTime: string;
+  duration: number;
+}
+
 // Extracted Content component
 const NaturalLanguageInputContent = ({
   prompt,
@@ -50,7 +59,7 @@ const NaturalLanguageInputContent = ({
   isRecording: boolean;
   isParsing: boolean;
   handleParse: (text: string) => void;
-  parsedEvents: Omit<TimeEvent, 'id' | 'duration'>[];
+  parsedEvents: ParsedEventFromAI[];
   availableTags: Tag[];
 }) => (
   <div className="grid gap-4 py-4">
@@ -102,8 +111,8 @@ const NaturalLanguageInputContent = ({
               <EventAccordionItem
                 key={index}
                 event={event}
-                isNewlyCreated
-                availableTags={availableTags.map((t) => t.name)}
+                availableTags={availableTags}
+                onEventProcessed={() => { }}
               />
             ))}
           </Accordion>
@@ -124,7 +133,7 @@ const NaturalLanguageInputFooter = ({
 }: {
   aiInteraction: AiInteraction | null;
   setIsDebugViewOpen: (isOpen: boolean) => void;
-  parsedEvents: Omit<TimeEvent, 'id' | 'duration'>[];
+  parsedEvents: ParsedEventFromAI[];
   handleAcceptAll: () => void;
   isAcceptingAll: boolean;
   handleClose: () => void;
@@ -171,9 +180,7 @@ export function NaturalLanguageInput({
 }: NaturalLanguageInputProps) {
   const [prompt, setPrompt] = useState('');
   const [isParsing, setIsParsing] = useState(false);
-  const [parsedEvents, setParsedEvents] = useState<
-    Omit<TimeEvent, 'id' | 'duration'>[]
-  >([]);
+  const [parsedEvents, setParsedEvents] = useState<ParsedEventFromAI[]>([]);
   const [isAcceptingAll, setIsAcceptingAll] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [aiInteraction, setAiInteraction] = useState<AiInteraction | null>(
@@ -213,19 +220,26 @@ export function NaturalLanguageInput({
         });
 
         if (events.length === 1) {
-          setEventToCreate(
-            events[0] as Omit<TimeEvent, 'id' | 'duration'>
-          );
+          // Convert AI tag names to tag IDs
+          const aiEvent = events[0];
+          const tagIds = aiEvent.tags
+            .filter((tagName) => tagNames.includes(tagName))
+            .map((tagName) => availableTags.find((t) => t.name === tagName)?.id)
+            .filter((id): id is string => id !== undefined);
+          setEventToCreate({
+            title: aiEvent.title,
+            tagIds,
+            startTime: new Date(aiEvent.startTime),
+            endTime: new Date(aiEvent.endTime),
+          });
           handleClose();
         } else {
-          const eventsWithTags = events.map((event) => ({
+          const eventsWithValidTags = events.map((event) => ({
             ...event,
             tags: event.tags?.filter((tag) => tagNames.includes(tag)) || [],
           }));
 
-          setParsedEvents(
-            eventsWithTags as Omit<TimeEvent, 'id' | 'duration'>[]
-          );
+          setParsedEvents(eventsWithValidTags as ParsedEventFromAI[]);
           setAiInteraction({ prompt: text, response: debugInfo });
         }
       } catch (error) {
@@ -296,7 +310,16 @@ export function NaturalLanguageInput({
   const handleAcceptAll = async () => {
     setIsAcceptingAll(true);
     try {
-      await addEvents(parsedEvents);
+      // Convert all parsed events from tag names to tag IDs
+      const eventsWithTagIds = parsedEvents.map((event) => ({
+        title: event.title,
+        tagIds: event.tags
+          .map((tagName) => availableTags.find((t) => t.name === tagName)?.id)
+          .filter((id): id is string => id !== undefined),
+        startTime: new Date(event.startTime),
+        endTime: new Date(event.endTime),
+      }));
+      await addEvents(eventsWithTagIds);
       toast({
         title: 'Events Created',
         description: 'The new events have been added to your calendar.',

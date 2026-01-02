@@ -31,35 +31,54 @@ export function TimeBreakdownChart({ events: rawEvents, allTags }: TimeBreakdown
   const events = useMemo(() => {
     if (!rawEvents) return [];
     return rawEvents.map(e => ({
-    ...e,
-    startTime: parseDate(e.startTime),
-    endTime: parseDate(e.endTime),
-  }))}, [rawEvents]);
-  
+      ...e,
+      startTime: parseDate(e.startTime),
+      endTime: parseDate(e.endTime),
+    }))
+  }, [rawEvents]);
+
   const chartData = useMemo(() => {
     const tagDurations: { [key: string]: number } = {};
     const today = new Date();
     const startOfThisWeek = startOfWeek(today, { weekStartsOn: 1 }); // 1 = Monday
 
-    const recentEvents = events.filter(e => 
+    const recentEvents = events.filter(e =>
       isWithinInterval(e.startTime, { start: startOfThisWeek, end: today })
     );
 
     recentEvents.forEach(event => {
-      event.tags.forEach(tag => {
-        if (!tagDurations[tag]) {
-          tagDurations[tag] = 0;
+      event.tagIds.forEach((tagId: string) => {
+        if (!tagDurations[tagId]) {
+          tagDurations[tagId] = 0;
         }
-        tagDurations[tag] += event.duration;
+        tagDurations[tagId] += event.duration;
       });
     });
 
-    return Object.entries(tagDurations).map(([name, value]) => ({
-      name,
-      value: value / 60, // Display in hours
-      fill: resolvedTheme === 'dark' ? getTagColorDark(name, allTags) : getTagColor(name, allTags),
-    }));
+    // Map tag IDs to tag info for display
+    return Object.entries(tagDurations).map(([tagId, value]) => {
+      const tag = allTags.find(t => t.id === tagId);
+      const tagName = tag?.name || 'Unknown';
+      const tagColor = tag?.color || '#cccccc';
+      return {
+        name: tagName,
+        value: value / 60, // Display in hours
+        fill: resolvedTheme === 'dark' ? darkenColor(tagColor) : tagColor,
+      };
+    });
   }, [events, resolvedTheme, allTags]);
+
+  // Helper to darken a hex color for dark mode
+  function darkenColor(color: string): string {
+    if (!color.startsWith('#')) return color;
+    let r = parseInt(color.slice(1, 3), 16);
+    let g = parseInt(color.slice(3, 5), 16);
+    let b = parseInt(color.slice(5, 7), 16);
+    r = Math.floor(r * 0.6);
+    g = Math.floor(g * 0.6);
+    b = Math.floor(b * 0.6);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
 
   const chartConfig = useMemo(() => {
     const config: any = {};
@@ -71,7 +90,7 @@ export function TimeBreakdownChart({ events: rawEvents, allTags }: TimeBreakdown
     });
     return config;
   }, [chartData]);
-  
+
   if (chartData.length === 0) {
     return (
       <div className="flex items-center justify-center h-[250px] text-muted-foreground">
@@ -85,9 +104,9 @@ export function TimeBreakdownChart({ events: rawEvents, allTags }: TimeBreakdown
       <PieChart>
         <ChartTooltip
           cursor={false}
-          content={<ChartTooltipContent 
+          content={<ChartTooltipContent
             formatter={(value) => `${(value as number).toFixed(1)}h`}
-            hideLabel 
+            hideLabel
           />}
         />
         <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={60}>

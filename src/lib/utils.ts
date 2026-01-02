@@ -38,7 +38,7 @@ export function getTagColorDark(tag: string, allTags: Tag[]): string {
     b = Math.floor(b * 0.6);
     return `rgb(${r}, ${g}, ${b})`;
   }
-  
+
   // Fallback color generation
   let hash = 0;
   for (let i = 0; i < tag.length; i++) {
@@ -62,6 +62,6 @@ export const getTimePeriodDateRange = (period: 'daily' | 'weekly' | 'monthly') =
 };
 
 export const getUniqueTags = (events: TimeEvent[]): string[] => {
-  const allTags = events.flatMap(event => event.tags);
-  return [...new Set(allTags)];
+  const allTagIds = events.flatMap(event => event.tagIds);
+  return [...new Set(allTagIds)];
 }

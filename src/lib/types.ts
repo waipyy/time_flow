@@ -11,8 +11,7 @@ export interface TimeEvent {
   startTime: Date;
   endTime: Date;
   duration: number; // Duration in minutes
-  tags?: string[]; // DEPRECATED: Array of tag names (for backward compat)
-  tagIds?: string[]; // Array of tag IDs (preferred)
+  tagIds: string[]; // Array of tag IDs
 }
 
 export interface Task {
@@ -26,14 +25,9 @@ export interface Task {
 
 export interface Goal {
   id: string;
-  name?: string; // Goal name
-  title?: string; // Legacy field
-  frequency?: 'daily' | 'weekly' | 'monthly';
-  timePeriod?: 'daily' | 'weekly' | 'monthly';
-  targetHours?: number;
-  targetAmount?: number;
-  comparison?: 'at-least' | 'no-more-than';
-  eligibleTags?: string[]; // DEPRECATED: Array of tag names (for backward compat)
-  eligibleTagIds?: string[]; // Array of tag IDs (preferred)
-  tags?: string[]; // Legacy field
+  name: string;
+  timePeriod: 'daily' | 'weekly' | 'monthly';
+  targetAmount: number;
+  comparison: 'at-least' | 'no-more-than';
+  eligibleTagIds: string[]; // Array of tag IDs
 }

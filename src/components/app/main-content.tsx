@@ -12,8 +12,6 @@ import { useTags } from '@/hooks/use-tags';
 import { Skeleton } from '../ui/skeleton';
 import { AppHeader } from './app-header';
 import { cn } from '@/lib/utils';
-import { useEffect, useRef } from 'react';
-import { migrateGoalsTagsToIds, migrateEventsTagsToIds } from '@/lib/actions';
 
 function FullPageSkeleton() {
   return (
@@ -42,38 +40,11 @@ export function MainContent() {
   const searchParams = useSearchParams();
   const currentView = searchParams.get('view') || 'dashboard';
 
-  const { events, isLoading: isLoadingEvents, mutateEvents } = useEvents();
-  const { goals, isLoading: isLoadingGoals, mutate: mutateGoals } = useGoals();
+  const { events, isLoading: isLoadingEvents } = useEvents();
+  const { goals, isLoading: isLoadingGoals } = useGoals();
   const { tags, isLoading: isLoadingTags } = useTags();
 
   const isLoading = isLoadingEvents || isLoadingGoals || isLoadingTags;
-  const migrationRanRef = useRef(false);
-
-  // Run migration once when all data is loaded
-  useEffect(() => {
-    if (isLoading || migrationRanRef.current) return;
-    if (!tags?.length) return;
-
-    migrationRanRef.current = true;
-
-    // Run migrations in background
-    (async () => {
-      const [goalsResult, eventsResult] = await Promise.all([
-        migrateGoalsTagsToIds(tags),
-        migrateEventsTagsToIds(tags),
-      ]);
-
-      // Refresh data if any migrations occurred
-      if (goalsResult.success && (goalsResult.migratedCount ?? 0) > 0) {
-        console.log(`[Migration] Migrated ${goalsResult.migratedCount} goals`);
-        mutateGoals();
-      }
-      if (eventsResult.success && (eventsResult.migratedCount ?? 0) > 0) {
-        console.log(`[Migration] Migrated ${eventsResult.migratedCount} events`);
-        mutateEvents();
-      }
-    })();
-  }, [isLoading, tags, mutateGoals, mutateEvents]);
 
   const mainContentClass = cn(
     "flex-1",
@@ -88,10 +59,10 @@ export function MainContent() {
       <main className={mainContentClass}>
         {isLoading ? <FullPageSkeleton /> : (
           <>
-            {currentView === 'dashboard' && <DashboardView events={events} goals={goals} tags={tags} />}
-            {currentView === 'calendar' && <CalendarView events={events} tags={tags} />}
-            {currentView === 'goals' && <GoalsView events={events} goals={goals} />}
-            {currentView === 'tags' && <TagsView tags={tags} goals={goals} />}
+            {currentView === 'dashboard' && <DashboardView events={events || []} goals={goals || []} tags={tags || []} />}
+            {currentView === 'calendar' && <CalendarView events={events || []} tags={tags || []} />}
+            {currentView === 'goals' && <GoalsView events={events || []} goals={goals || []} />}
+            {currentView === 'tags' && <TagsView tags={tags || []} goals={goals || []} />}
           </>
         )}
       </main>

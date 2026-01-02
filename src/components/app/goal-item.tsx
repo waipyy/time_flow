@@ -72,11 +72,6 @@ export function GoalItem({ goal, events }: GoalItemProps) {
         return tag ? tag.name : tagId;
     }
 
-    // Get tag IDs (prefer eligibleTagIds, fallback to eligibleTags for backward compat)
-    const tagIds = goal.eligibleTagIds?.length
-        ? goal.eligibleTagIds
-        : (goal.eligibleTags || []);
-
     return (
         <Card>
             <CardHeader>
@@ -129,7 +124,7 @@ export function GoalItem({ goal, events }: GoalItemProps) {
             </CardContent>
             <CardFooter>
                 <div className="flex flex-wrap gap-1">
-                    {tagIds.map(tagId => (
+                    {goal.eligibleTagIds.map((tagId: string) => (
                         <Badge key={tagId} className="text-xs" style={{ backgroundColor: getTagColor(tagId) }}>
                             {getTagName(tagId)}
                         </Badge>

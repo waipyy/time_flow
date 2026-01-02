@@ -25,7 +25,7 @@ export function EventAccordionItem({ event, availableTags, onEventProcessed }: E
     setStatus(success ? 'saved' : 'cancelled');
     onEventProcessed();
   };
-  
+
   const getStatusIndicator = () => {
     switch (status) {
       case 'saved':
@@ -59,7 +59,10 @@ export function EventAccordionItem({ event, availableTags, onEventProcessed }: E
             className="p-4 border-t"
             eventToEdit={{
               title: event.title,
-              tags: event.tags,
+              // Convert tag names from AI to tag IDs
+              tagIds: event.tags
+                .map(tagName => availableTags.find(t => t.name === tagName)?.id)
+                .filter((id): id is string => id !== undefined),
               startTime: new Date(event.startTime),
               endTime: new Date(event.endTime),
             }}

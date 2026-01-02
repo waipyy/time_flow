@@ -72,12 +72,6 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
   const router = useRouter();
   const { mutateEvents } = useEvents();
 
-  // Helper: convert tag names to IDs (for backward compat when editing old events)
-  const tagNamesToIds = (names: string[]): string[] => {
-    if (!availableTags) return [];
-    return names.map(name => availableTags.find(t => t.name === name)?.id).filter((id): id is string => !!id);
-  };
-
   const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
@@ -91,14 +85,10 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
 
   useEffect(() => {
     if (eventToEdit) {
-      // Use tagIds if available, otherwise convert tags (names) to IDs
-      const tagIds = eventToEdit.tagIds?.length
-        ? eventToEdit.tagIds
-        : tagNamesToIds(eventToEdit.tags || []);
       form.reset({
         title: eventToEdit.title || '',
         description: eventToEdit.description || '',
-        tagIds: tagIds,
+        tagIds: eventToEdit.tagIds || [],
         startTime: eventToEdit.startTime ? new Date(eventToEdit.startTime) : new Date(),
         endTime: eventToEdit.endTime ? new Date(eventToEdit.endTime) : new Date(Date.now() + 60 * 60 * 1000),
       });
@@ -111,7 +101,6 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
         endTime: new Date(Date.now() + 60 * 60 * 1000),
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventToEdit, form, isOpen]);
 
   const handleClose = (success: boolean) => {

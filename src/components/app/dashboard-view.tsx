@@ -67,26 +67,7 @@ export function DashboardView({ events, goals, tags }: DashboardViewProps) {
     const relevantEvents = events.filter(event => {
       const eventTime = new Date(event.startTime).getTime();
       if (eventTime < start.getTime() || eventTime > end.getTime()) return false;
-
-      // Get goal's tag IDs (prefer eligibleTagIds, fallback to eligibleTags for backward compat)
-      const goalTagIds = goal.eligibleTagIds || [];
-      const goalTagNames = goal.eligibleTags || [];
-
-      // Get event's tag IDs (prefer tagIds, fallback to tags for backward compat)
-      const eventTagIds = event.tagIds || [];
-      const eventTagNames = event.tags || [];
-
-      // Match by IDs first
-      if (goalTagIds.length > 0 && eventTagIds.length > 0) {
-        return goalTagIds.some(tagId => eventTagIds.includes(tagId));
-      }
-
-      // Fallback: match by names (for non-migrated data)
-      if (goalTagNames.length > 0 && eventTagNames.length > 0) {
-        return goalTagNames.some(tagName => eventTagNames.includes(tagName));
-      }
-
-      return false;
+      return goal.eligibleTagIds.some(tagId => event.tagIds.includes(tagId));
     });
     const totalHours = relevantEvents.reduce((acc, event) => acc + event.duration, 0) / 60;
 
@@ -94,7 +75,6 @@ export function DashboardView({ events, goals, tags }: DashboardViewProps) {
       return totalHours >= goal.targetAmount;
     }
     // For 'no-more-than' goals, "achieved" means staying under the limit.
-    // We are only showing achievement rate for target goals for now.
     return false;
   }).length;
 

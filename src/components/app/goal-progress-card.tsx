@@ -12,29 +12,9 @@ export function GoalProgressCard({ goal, events }: GoalProgressCardProps) {
   const { start, end } = getTimePeriodDateRange(goal.timePeriod);
 
   const relevantEvents = events.filter(event => {
-    // Ensure startTime is a Date object before calling getTime()
     const eventTime = (typeof event.startTime === 'string' ? new Date(event.startTime) : event.startTime).getTime();
     if (eventTime < start.getTime() || eventTime > end.getTime()) return false;
-
-    // Get goal's tag IDs (prefer eligibleTagIds, fallback to eligibleTags for backward compat)
-    const goalTagIds = goal.eligibleTagIds || [];
-    const goalTagNames = goal.eligibleTags || [];
-
-    // Get event's tag IDs (prefer tagIds, fallback to tags for backward compat)
-    const eventTagIds = event.tagIds || [];
-    const eventTagNames = event.tags || [];
-
-    // Match by IDs first
-    if (goalTagIds.length > 0 && eventTagIds.length > 0) {
-      return goalTagIds.some(tagId => eventTagIds.includes(tagId));
-    }
-
-    // Fallback: match by names (for non-migrated data)
-    if (goalTagNames.length > 0 && eventTagNames.length > 0) {
-      return goalTagNames.some(tagName => eventTagNames.includes(tagName));
-    }
-
-    return false;
+    return goal.eligibleTagIds.some(tagId => event.tagIds.includes(tagId));
   });
 
   const totalMinutes = relevantEvents.reduce(

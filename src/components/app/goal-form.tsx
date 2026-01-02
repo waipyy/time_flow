@@ -64,12 +64,6 @@ export function GoalForm({ goalToEdit, children, availableTags }: GoalFormProps)
   const [isLoading, setIsLoading] = useState(false);
   const [isTagsPopoverOpen, setIsTagsPopoverOpen] = useState(false);
 
-  // Helper: convert tag names to IDs (for backward compat when editing old goals)
-  const tagNamesToIds = (names: string[]): string[] => {
-    if (!availableTags) return [];
-    return names.map(name => availableTags.find(t => t.name === name)?.id).filter((id): id is string => !!id);
-  };
-
   const form = useForm<GoalFormValues>({
     resolver: zodResolver(goalFormSchema),
     defaultValues: {
@@ -84,16 +78,12 @@ export function GoalForm({ goalToEdit, children, availableTags }: GoalFormProps)
   useEffect(() => {
     if (isOpen) {
       if (goalToEdit) {
-        // Use eligibleTagIds if available, otherwise convert eligibleTags (names) to IDs
-        const tagIds = goalToEdit.eligibleTagIds?.length
-          ? goalToEdit.eligibleTagIds
-          : tagNamesToIds(goalToEdit.eligibleTags || []);
         form.reset({
-          name: goalToEdit.name || '',
-          eligibleTagIds: tagIds,
-          targetAmount: goalToEdit.targetAmount || 10,
-          timePeriod: goalToEdit.timePeriod || 'weekly',
-          comparison: goalToEdit.comparison || 'at-least',
+          name: goalToEdit.name,
+          eligibleTagIds: goalToEdit.eligibleTagIds,
+          targetAmount: goalToEdit.targetAmount,
+          timePeriod: goalToEdit.timePeriod,
+          comparison: goalToEdit.comparison,
         })
       } else {
         form.reset({
@@ -105,7 +95,6 @@ export function GoalForm({ goalToEdit, children, availableTags }: GoalFormProps)
         })
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, goalToEdit, form]);
 
   const handleOpenChange = (open: boolean) => {
