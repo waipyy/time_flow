@@ -26,7 +26,9 @@ interface CalendarViewProps {
   tags: Tag[];
 }
 
-const TIMEZONE = 'America/Los_Angeles';
+// Use detection for local dev, but fallback to something valid if needed.
+// Since this is a client-side component (or runs locally), we can trust resolvedOptions.
+const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 // Helper function to ensure date strings are parsed into Date objects.
 // The ISO strings from Firestore are already in UTC.
