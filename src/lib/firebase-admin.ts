@@ -12,14 +12,29 @@ const initializeDb = () => {
     return;
   }
 
+  // Check if using Firebase Emulator
+  const useEmulator = process.env.FIRESTORE_EMULATOR_HOST;
+  if (useEmulator) {
+    console.log('--- Using Firestore Emulator ---');
+    console.log('FIRESTORE_EMULATOR_HOST:', useEmulator);
+
+    // Initialize with a minimal config for emulator
+    app = admin.initializeApp({
+      projectId: 'demo-timeflow', // Use demo- prefix for emulator
+    });
+
+    console.log('Firebase Admin initialized for emulator use.');
+    return;
+  }
+
   try {
     console.log('--- Initializing Firebase Admin with require(serviceAccountKey.json) ---');
     const serviceAccountJson = process.env.SERVICE_ACCOUNT_JSON;
-    
+
     if (!serviceAccountJson) {
       throw new Error('SERVICE_ACCOUNT_JSON environment variable not found');
     }
-    
+
     const serviceAccount = JSON.parse(serviceAccountJson);
 
     console.log('--- Raw Service Account Debug ---');
@@ -41,7 +56,7 @@ const initializeDb = () => {
       credential,
       projectId: serviceAccount.project_id,
     });
-    
+
     console.log('--- App Details ---');
     console.log(
       'App options:',
@@ -51,13 +66,13 @@ const initializeDb = () => {
 
     const dbName = 'timeflow';
     console.log(`Attempting to connect to database: ${dbName}`);
-    
+
     // Perform initial connection test
     const initialDb = getFirestore(app, dbName);
-    
+
     if (initialDb) {
-        console.log('Initial DB connection successful. Running debug checks...');
-        debugDbConnection(initialDb).catch(console.error);
+      console.log('Initial DB connection successful. Running debug checks...');
+      debugDbConnection(initialDb).catch(console.error);
     }
 
   } catch (error) {
