@@ -321,7 +321,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
           </div>
 
           {/* Day columns */}
-          <div className="flex-1 grid" style={{ gridTemplateColumns: 'repeat(7, minmax(200px, 1fr))' }} onMouseLeave={() => setDragStartDate(null)}>
+          <div className="flex-1 grid" style={{ gridTemplateColumns: 'repeat(7, minmax(185px, 1fr))' }} onMouseLeave={() => setDragStartDate(null)}>
             {week.map((day) => {
               const eventsWithPosition = getEventsWithOverlapData(day, displayedEvents as EventWithPosition[]);
               return (

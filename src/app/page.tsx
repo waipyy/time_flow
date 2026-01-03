@@ -6,8 +6,8 @@ import {
   SidebarContent as SidebarContentWrapper,
   SidebarHeader,
   SidebarProvider,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { TimeFlowLogo } from '@/components/icons';
 import { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MainContent } from '@/components/app/main-content';
@@ -18,8 +18,8 @@ export default function Home() {
     <SidebarProvider>
       <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar className="bg-sidebar" collapsible="icon">
-          <SidebarHeader className="items-center justify-center p-4">
-            <TimeFlowLogo className="size-8" />
+          <SidebarHeader className="items-center justify-start p-4 flex-row gap-2">
+            <SidebarTrigger />
             <h1 className="font-semibold text-xl text-sidebar-foreground group-data-[collapsible=icon]:hidden">
               TimeFlow
             </h1>
