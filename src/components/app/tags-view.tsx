@@ -12,7 +12,7 @@ import { TagsTable } from './tags-table';
 
 function TagsSkeleton() {
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
         <div>
           <Skeleton className="h-8 w-48 mb-2" />
@@ -45,7 +45,7 @@ export function TagsView({ tags, goals }: TagsViewProps) {
   }
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Your Tags</h2>

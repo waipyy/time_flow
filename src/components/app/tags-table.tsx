@@ -34,12 +34,12 @@ export function TagsTable({ tags, goals }: TagsTableProps) {
   };
 
   return (
-    <div className="rounded-lg border">
-      <Table>
+    <div className="rounded-lg border w-full">
+      <Table className="w-full table-fixed">
         <TableHeader>
           <TableRow>
-            <TableHead>Tag Name</TableHead>
-            <TableHead>Color</TableHead>
+            <TableHead className="w-[200px]">Tag Name</TableHead>
+            <TableHead className="w-[150px]">Color</TableHead>
             <TableHead>Associated Goals</TableHead>
             <TableHead className="w-[50px]"></TableHead>
           </TableRow>

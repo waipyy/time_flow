@@ -278,7 +278,7 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
   return (
     <>
       <div className="h-full flex flex-col">
-        <div className="p-4 border-b">
+        <div className="p-4 border-b shrink-0">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">
               {formatInTimeZone(startOfWeek(toZonedTime(currentDate, TIMEZONE), { weekStartsOn: 1 }), TIMEZONE, 'MMMM yyyy')}
