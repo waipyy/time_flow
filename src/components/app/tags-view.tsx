@@ -61,24 +61,16 @@ export function TagsView({ tags, goals }: TagsViewProps) {
         </TagForm>
       </div>
 
-       {tags.length > 0 ? (
-          <TagsTable tags={tags} goals={goals} />
-       ) : (
-         <Card className="col-span-full flex flex-col items-center justify-center p-8 text-center">
-           <CardHeader>
-             <CardTitle>No tags yet!</CardTitle>
-             <CardDescription>Click "New Tag" to create your first tag.</CardDescription>
-           </CardHeader>
-           <CardContent>
-             <TagForm>
-               <Button>
-                 <Plus className="mr-2 h-4 w-4" />
-                 Create a Tag
-               </Button>
-             </TagForm>
-           </CardContent>
-         </Card>
-       )}
+      {tags.length > 0 ? (
+        <TagsTable tags={tags} goals={goals} />
+      ) : (
+        <Card className="col-span-full flex flex-col items-center justify-center p-8 text-center">
+          <CardHeader>
+            <CardTitle>No tags yet!</CardTitle>
+            <CardDescription>Click &quot;New Tag&quot; above to create your first tag.</CardDescription>
+          </CardHeader>
+        </Card>
+      )}
     </div>
   );
 }

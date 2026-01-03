@@ -116,9 +116,17 @@ export function DashboardView({ events, goals, tags }: DashboardViewProps) {
             <CardContent>
               <ScrollArea className="h-[350px]">
                 <div className="space-y-4 pr-4">
-                  {goals.map(goal => (
-                    <GoalProgressCard key={goal.id} goal={goal} events={events} />
-                  ))}
+                  {goals.length > 0 ? (
+                    goals.map(goal => (
+                      <GoalProgressCard key={goal.id} goal={goal} events={events} />
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-[300px] text-center">
+                      <Trophy className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                      <p className="text-muted-foreground">No goals yet</p>
+                      <p className="text-sm text-muted-foreground/70">Create a goal to track your progress</p>
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
             </CardContent>

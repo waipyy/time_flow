@@ -284,6 +284,9 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
               {formatInTimeZone(startOfWeek(toZonedTime(currentDate, TIMEZONE), { weekStartsOn: 1 }), TIMEZONE, 'MMMM yyyy')}
             </h2>
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
+                Today
+              </Button>
               <Button variant="outline" size="icon" onClick={handlePrevWeek}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>

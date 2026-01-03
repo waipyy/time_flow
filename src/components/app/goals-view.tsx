@@ -13,13 +13,13 @@ import { useTags } from '@/hooks/use-tags';
 function GoalsSkeleton() {
   return (
     <div className="space-y-8">
-       <div className="flex justify-between items-center">
-          <div>
-            <Skeleton className="h-8 w-48 mb-2" />
-            <Skeleton className="h-4 w-72" />
-          </div>
-          <Skeleton className="h-10 w-28" />
+      <div className="flex justify-between items-center">
+        <div>
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-72" />
         </div>
+        <Skeleton className="h-10 w-28" />
+      </div>
       <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
@@ -47,7 +47,7 @@ export function GoalsView({ goals, events }: GoalsViewProps) {
   if (!goals || !events || !tags) {
     return <GoalsSkeleton />;
   }
-  
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center mb-8">
@@ -58,10 +58,10 @@ export function GoalsView({ goals, events }: GoalsViewProps) {
           </p>
         </div>
         <GoalForm availableTags={tags}>
-            <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                New Goal
-            </Button>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            New Goal
+          </Button>
         </GoalForm>
       </div>
 
@@ -70,22 +70,14 @@ export function GoalsView({ goals, events }: GoalsViewProps) {
           <GoalItem key={goal.id} goal={goal} events={events} />
         ))}
       </div>
-       {goals.length === 0 && (
-         <Card className="col-span-full flex flex-col items-center justify-center p-8 text-center">
-           <CardHeader>
-             <CardTitle>No goals yet!</CardTitle>
-             <CardDescription>Click "New Goal" to set your first time-tracking objective.</CardDescription>
-           </CardHeader>
-           <CardContent>
-             <GoalForm availableTags={tags}>
-               <Button>
-                 <Plus className="mr-2 h-4 w-4" />
-                 Create a Goal
-               </Button>
-             </GoalForm>
-           </CardContent>
-         </Card>
-       )}
+      {goals.length === 0 && (
+        <Card className="col-span-full flex flex-col items-center justify-center p-8 text-center">
+          <CardHeader>
+            <CardTitle>No goals yet!</CardTitle>
+            <CardDescription>Click &quot;New Goal&quot; above to set your first time-tracking objective.</CardDescription>
+          </CardHeader>
+        </Card>
+      )}
     </div>
   );
 }
