@@ -28,7 +28,7 @@ export default function Home() {
             <SidebarContent />
           </Suspense>
         </Sidebar>
-        <div className="flex flex-col flex-1 w-full pr-4">
+        <div className="flex flex-col flex-1 w-full pr-6">
           <Suspense fallback={<DashboardSkeleton />}>
             <MainContent />
           </Suspense>
