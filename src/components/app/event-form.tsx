@@ -32,6 +32,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
 import { Textarea } from '../ui/textarea';
+import { ScrollArea } from '../ui/scroll-area';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '../ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
@@ -217,7 +218,7 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tags</FormLabel>
-              <Popover open={isTagsPopoverOpen} onOpenChange={setIsTagsPopoverOpen}>
+              <Popover open={isTagsPopoverOpen} onOpenChange={setIsTagsPopoverOpen} modal={true}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -237,30 +238,32 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
                 <PopoverContent className="w-[375px] p-0">
                   <Command>
                     <CommandInput placeholder="Search tags..." />
-                    <CommandList className="max-h-48 overflow-auto">
-                      <CommandGroup>
-                        {availableTags?.map((tag) => (
-                          <CommandItem
-                            key={tag.id}
-                            value={tag.name}
-                            onSelect={() => {
-                              const currentTagIds = field.value || [];
-                              const newTagIds = currentTagIds.includes(tag.id)
-                                ? currentTagIds.filter((t: string) => t !== tag.id)
-                                : [...currentTagIds, tag.id];
-                              field.onChange(newTagIds);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                (field.value || []).includes(tag.id) ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {tag.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
+                    <CommandList>
+                      <ScrollArea className="h-48">
+                        <CommandGroup>
+                          {availableTags?.map((tag) => (
+                            <CommandItem
+                              key={tag.id}
+                              value={tag.name}
+                              onSelect={() => {
+                                const currentTagIds = field.value || [];
+                                const newTagIds = currentTagIds.includes(tag.id)
+                                  ? currentTagIds.filter((t: string) => t !== tag.id)
+                                  : [...currentTagIds, tag.id];
+                                field.onChange(newTagIds);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  (field.value || []).includes(tag.id) ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {tag.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </ScrollArea>
                     </CommandList>
                   </Command>
                 </PopoverContent>
