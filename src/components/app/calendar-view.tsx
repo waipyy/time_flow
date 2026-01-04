@@ -4,7 +4,7 @@ import {
   endOfDay,
   endOfWeek,
   // format,
-  // isSameDay,
+  isSameDay,
   isWithinInterval,
   max,
   min,
@@ -12,9 +12,10 @@ import {
   startOfDay,
   startOfWeek,
 } from 'date-fns';
+
 import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useMemo, useState, MouseEvent } from 'react';
+import { useMemo, useState, MouseEvent, useEffect } from 'react';
 
 import type { Tag, TimeEvent } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -61,6 +62,22 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
   );
   const [dragStartDate, setDragStartDate] = useState<Date | null>(null);
   const [draggingEvent, setDraggingEvent] = useState<Partial<TimeEvent> | null>(null);
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(new Date());
+    }, 60000); // Update every minute
+    return () => clearInterval(interval);
+  }, []);
+
+  const getCurrentTimePosition = (date: Date) => {
+    const zonedDate = toZonedTime(date, TIMEZONE);
+    const hours = zonedDate.getHours();
+    const minutes = zonedDate.getMinutes();
+    const totalHours = hours + minutes / 60;
+    return `${totalHours * 2.5}rem`;
+  };
 
 
   const week = useMemo(() => {
@@ -324,6 +341,8 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
           <div className="flex-1 grid" style={{ gridTemplateColumns: 'repeat(7, minmax(185px, 1fr))' }} onMouseLeave={() => setDragStartDate(null)}>
             {week.map((day) => {
               const eventsWithPosition = getEventsWithOverlapData(day, displayedEvents as EventWithPosition[]);
+              const isToday = isSameDay(day, toZonedTime(now, TIMEZONE));
+
               return (
                 <div key={day.toString()} className="relative border-l">
                   <div className="sticky top-0 bg-background z-30 text-center p-2 border-b">
@@ -344,6 +363,15 @@ export function CalendarView({ events: rawEvents, tags }: CalendarViewProps) {
                         style={{ pointerEvents: 'none' }} // Disable pointer events on individual slots
                       ></div>
                     ))}
+                    {/* Current Time Line */}
+                    {isToday && (
+                      <div
+                        className="absolute w-full border-t-2 border-red-500 z-40 pointer-events-none"
+                        style={{ top: getCurrentTimePosition(now) }}
+                      >
+                        <div className="absolute -left-1.5 -top-1.5 w-3 h-3 rounded-full bg-red-500 shadow-sm" />
+                      </div>
+                    )}
                     {/* Events */}
                     {eventsWithPosition.map((event) => (
                       <div
