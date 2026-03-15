@@ -64,7 +64,6 @@ export const parseNaturalLanguageInputFlow = ai.defineFlow(
     name: 'parseNaturalLanguageInputFlow',
     inputSchema: ParseNaturalLanguageInputInputSchema,
     outputSchema: ParseNaturalLanguageInputOutputSchema,
-    tools: [getLoggedEventsTool],
   },
   async input => {
     const { output } = await parseNaturalLanguageInputPrompt(input);

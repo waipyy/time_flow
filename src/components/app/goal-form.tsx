@@ -108,7 +108,7 @@ export function GoalForm({ goalToEdit, children, availableTags }: GoalFormProps)
       const action = goalToEdit?.id ? updateGoal(goalToEdit.id, data) : addGoal(data);
       const result = await action;
 
-      if (result.success) {
+      if (result.success && result.goal) {
         await mutate('/api/goals');
         toast({
           title: `Goal ${goalToEdit?.id ? 'updated' : 'created'}`,

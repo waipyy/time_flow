@@ -84,7 +84,7 @@ export function TagForm({ tagToEdit, children }: TagFormProps) {
       
       const result = await action;
 
-      if (result.success) {
+      if (result.success && result.tag) {
         await mutate('/api/tags');
         toast({
           title: `Tag ${tagToEdit?.id ? 'updated' : 'created'}`,

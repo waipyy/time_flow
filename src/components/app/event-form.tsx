@@ -131,7 +131,7 @@ export function EventForm({ isOpen, onOpenChange, eventToEdit, onFinished, onCan
       const action = eventToEdit?.id ? updateEvent(eventToEdit.id, data) : addEvent(data);
       const result = await action;
 
-      if (result.success) {
+      if (result.success && result.event) {
         await mutateEvents(); // Re-fetch events
         toast({
           title: `Event ${eventToEdit?.id ? 'updated' : 'created'}`,

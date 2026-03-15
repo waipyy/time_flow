@@ -208,9 +208,11 @@ export async function parseEventWithAI(input: string, availableTagNames: string[
     const renderedPrompt = await parseNaturalLanguageInputPrompt.render(promptInput);
 
     // Extract the full text from all message parts
-    const promptText = renderedPrompt.messages
-      .map(m => m.content.map(p => p.text || '').join(''))
-      .join('\n\n');
+    const promptText = renderedPrompt?.messages
+      ? renderedPrompt.messages
+        .map(m => m.content.map(p => p.text || '').join(''))
+        .join('\n\n')
+      : '';
 
     // Run the actual flow
     const result = await parseNaturalLanguageInput(promptInput);
